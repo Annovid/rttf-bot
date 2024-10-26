@@ -6,7 +6,8 @@ ENV_PATH = os.path.join(os.getcwd(), "resources", ".env")
 
 
 class Settings(BaseSettings):
-    DB_URL: str = ""
+    DB_URL: str = "postgresql://user:pass@localhost:5432/rttf_bot"
+    DEVELOPER_ID: int = 491372273
     DEBUG: bool = False
     TOKEN: str = ""
 

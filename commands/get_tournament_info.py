@@ -22,7 +22,7 @@ def get_player_id(profile_link: str) -> int:
 
 
 class GetTournamentInfoCommand:
-    def get_tournament_info(self, friend_ids: set[int]) -> dict:
+    def get_tournament_info(self, friend_ids: set[int]) -> dict[int, int]:
         matchings = defaultdict(list)
         date_from = datetime.date.today()
         date_to = date_from + datetime.timedelta(days=1)

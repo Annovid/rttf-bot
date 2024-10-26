@@ -31,10 +31,6 @@ def transform_dict_for_tr(data: dict) -> dict:
     return data
 
 
-import logging
-from bs4 import BeautifulSoup
-
-
 class TournamentsParser:
     @classmethod
     def parse_data(cls, page: str):

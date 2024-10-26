@@ -1,14 +1,14 @@
 import logging
+import os.path
 import urllib.parse
 import datetime
-from typing import Optional, Any
+from typing import Any
 
 import requests
-from gyp.generator.make import header
 
 
 class RTTFClient:
-    base_url = "https://m.rttf.ru/tournaments/"
+    base_url = "https://m.rttf.ru/"
     cities = ["r77"]
     headers = {
         "User-Agent": (
@@ -45,16 +45,10 @@ class RTTFClient:
             "date_to": date_to.strftime("%Y-%m-%d"),
             "title": title,
         }
-        url_parts = list(urllib.parse.urlparse(cls.base_url))
+        tournaments_url = os.path.join(cls.base_url, "tournaments")
+        url_parts = list(urllib.parse.urlparse(tournaments_url))
         url_parts[4] = urllib.parse.urlencode(query_params, doseq=True)
         return str(urllib.parse.urlunparse(url_parts))
-
-    @classmethod
-    def create_url_for_get_tournament(
-        cls,
-        tournament_id: int,
-    ) -> str:
-        return f"{cls.base_url}{tournament_id}"
 
     @classmethod
     def get_list_of_tournaments(
@@ -75,15 +69,31 @@ class RTTFClient:
         cls,
         tournament_id: int,
     ) -> str:
-        url = cls.create_url_for_get_tournament(tournament_id)
+        url = os.path.join(cls.base_url, "tournaments", str(tournament_id))
         response = cls.make_request(url)
         logging.info("Downloaded tournament {}".format(tournament_id))
         return response.text
 
+    @classmethod
+    def get_player(cls, player_id: int) -> str:
+        url = os.path.join(cls.base_url, "players", str(player_id))
+        response = cls.make_request(url)
+        logging.info("Downloaded player {}".format(player_id))
+        return response.text
+
+    @classmethod
+    def get_players(cls, search_str: str) -> str:
+        url = os.path.join(cls.base_url, "players") + "/?name=" + search_str
+        response = cls.make_request(url)
+        logging.info(
+            "Downloaded players search with str {}".format(search_str)
+        )
+        return response.text
+
 
 def main():
-    page = RTTFClient.get_tournament(143649)
-    with open("htmls/tournament/new2.html", "w") as f:
+    page = RTTFClient.get_player(168970)
+    with open("htmls/player/annovid.html", "w") as f:
         f.write(page)
     print(len(page))
 

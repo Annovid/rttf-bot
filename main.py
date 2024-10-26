@@ -1,51 +1,9 @@
-import datetime
-import re
-from collections import defaultdict
-
-from clients.client import RTTFClient
-from parsers.tournament_parser import TournamentParser
-from parsers.tournaments_parser import TournamentsParser
-from utils.custom_logger import CustomLogger
-
-logger = CustomLogger.setup_logger()
-
-
-def get_player_id(profile_link: str) -> int:
-    try:
-        match = re.search(r"/players/(\d+)", profile_link)
-    except TypeError as e:
-        logger.error(e)
-        return -1
-    if match:
-        return int(match.group(1))  # Возвращаем найденный player_id как число
-    raise ValueError("player_id not found in the provided link")
+from bot.bot_chat import bot_context
 
 
 def main():
-    friend_ids = [167087, 104043, 93073]
-    matchings = defaultdict(list)
-    date_from = datetime.date.today()
-    date_to = date_from + datetime.timedelta(days=1)
-    tournaments_page = RTTFClient.get_list_of_tournaments(
-        date_from=date_from,
-        date_to=date_to,
-    )
-    # with open('htmls/tournaments/tournaments1.html', 'w') as f:
-    #     f.write(tournaments_page)
-    # with open('htmls/tournaments/tournaments1.html', 'r') as f:
-    #     tournaments_page = f.read()
-    parse_result = TournamentsParser.parse_data(tournaments_page)
-    if not parse_result:
-        logger.warning("Tournaments was now find")
-        return
-    for tournament_info in parse_result:
-        tournament_page = RTTFClient.get_tournament(tournament_info.id)
-        tournament = TournamentParser.parse_data(tournament_page)
-        for player in tournament["registered_players"]:
-            player_id = get_player_id(player["profile_link"])
-            if player_id in friend_ids:
-                matchings[player_id] = tournament_info.id
-    print(matchings)
+    bot_context.load_user_config_matching()
+    bot_context.bot.infinity_polling()
 
 
 if __name__ == "__main__":
