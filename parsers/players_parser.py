@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 
 from parsers.parser import Parser
+from utils.models import Player
 
 
 class PlayersParser(Parser):
@@ -21,27 +22,26 @@ class PlayersParser(Parser):
             # Извлечение данных из ячеек
             rank = cells[0].text.strip()  # Рейтинг
             name = cells[1].text.strip()  # Имя
-            name_link = cells[1].find("a")["href"]  # Ссылка на профиль игрока
+            player_id = int(cells[1].find("a")["href"].split('/')[-1])
             city = cells[2].text.strip()  # Город
             rating = cells[3].find("dfn").text.strip()  # Рейтинг игрока
 
-            player_info = {
-                "rank": rank,
-                "name": name,
-                "profile_link": f"https://m.rttf.ru/{name_link}",
-                "city": city,
-                "rating": rating,
-            }
+            player = Player(
+                id = player_id,
+                name = name,
+                city = city,
+                rating = rating,
+            )
 
-            players_data.append(player_info)
+            players_data.append(player)
 
         return players_data
 
 
 def main():
-    with open("htmls/players/3.html", "r") as f:
+    with open("htmls/2024-10-26/players/3.html", "r") as f:
         page = f.read()
-    parse_result = PlayerParser()._parse_data(page)
+    parse_result = PlayersParser()._parse_data(page)
     print("\n".join(map(str, parse_result)))
     # {'rank': '40909', 'name': 'Синяев Нил', 'profile_link': 'https://m.rttf.ru/players/168970', 'city': 'Москва', 'rating': '206'}
 

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DEVELOPER_ID: int = 491372273
     DEBUG: bool = False
     TOKEN: str = ""
+    ADMIN_PASSWORD: str | None = None
 
     class Config:
         env_file = ENV_PATH

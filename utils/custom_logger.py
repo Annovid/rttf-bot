@@ -5,7 +5,7 @@ from datetime import datetime
 
 class CustomLogger:
     @staticmethod
-    def setup_logger():
+    def setup_logger() -> logging.Logger:
         log_dir = "logs"
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
@@ -30,19 +30,22 @@ class CustomLogger:
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
+        logger.info('Logger setup')
         return logger
 
 
+custom_logger: logging.Logger = CustomLogger.setup_logger()
+
+
 def main():
-    logger = CustomLogger.setup_logger()
-    logger.debug("This is a debug message.")
-    logger.info("This is an info message.")
-    logger.warning("This is a warning message.")
-    logger.error("This is an error message.")
+    custom_logger.debug("This is a debug message.")
+    custom_logger.info("This is an info message.")
+    custom_logger.warning("This is a warning message.")
+    custom_logger.error("This is an error message.")
     try:
         1 / 0
     except ZeroDivisionError:
-        logger.exception("An exception occurred")
+        custom_logger.exception("An exception occurred")
 
 
 if __name__ == "__main__":

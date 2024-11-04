@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 import datetime
 from pydantic import BaseModel, Field
 
+from parsers.parser import Parser
+from utils.models import Tournament
+
 
 class TournamentParseResult(BaseModel):
     id: int = Field(description="Tournament ID")
@@ -31,17 +34,9 @@ def transform_dict_for_tr(data: dict) -> dict:
     return data
 
 
-class TournamentsParser:
+class TournamentsParser(Parser):
     @classmethod
-    def parse_data(cls, page: str):
-        try:
-            return cls._parse_data(page)
-        except Exception as e:
-            logging.error(f"Error while parsing page: {e}")
-            return None
-
-    @classmethod
-    def _parse_data(cls, page: str):
+    def _parse_data(cls, page: str) -> list[TournamentParseResult]:
         soup = BeautifulSoup(page, "html.parser")
         tbody = soup.find("table")
         if not tbody:

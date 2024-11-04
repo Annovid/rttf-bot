@@ -2,10 +2,12 @@ from telegram import Message
 
 from bot.bot_context import bot_context
 from clients.client import RTTFClient
-from utils.general import parse_id, get_valid_initials, get_text
+from utils.general import parse_id, get_valid_initials, get_text, parse_int
 from commands.get_tournament_info import GetTournamentInfoCommand
 from parsers.players_parser import PlayersParser
-from utils.models import StateMachine
+from utils.models import StateMachine, Tournament
+from utils.rttf import get_player_info
+from utils.settings import settings
 
 
 @bot_context.bot.message_handler(commands=["start"])
@@ -16,14 +18,25 @@ def start(message: Message):
         user_config.state = StateMachine.MAIN
 
 
+@bot_context.bot.message_handler(commands=["help", "back"])
+def start(message: Message):
+    text = get_text("help.txt")
+    bot_context.bot.reply_to(message, text)
+    with bot_context.user_config_session(message.from_user.id) as user_config:
+        user_config.state = StateMachine.MAIN
+
+
 @bot_context.bot.message_handler(commands=["add_friend"])
 def add_friend(message: Message):
     bot_context.bot.reply_to(
         message,
-        "Введите id друга, которого хотите добавить или ссылку на него. "
-        "Например, 168970 или https://m.rttf.ru/players/168970. Если не знаете"
-        "его профиля, можете поискать по имени и фамилии. "
-        "В этом случае важно вписать сначала фамилию, затем имя.",
+        "Вы можете добавить друга по *фамилии и имени*, *ID* на сайте RTTF или с "
+        "помощью *ссылки на его профиль*. "
+        "Чтобы добавить друга по *фамилии и имени*, введите сначала фамилию, "
+        "затем имя. "
+        "Если хотите добавить пользователя по *ID* или *ссылке на его профиль,* введите"
+        "ID или ссылку на профиль. "
+        "Например, 168970 или https://m.rttf.ru/players/168970",
     )
     with bot_context.user_config_session(message.from_user.id) as user_config:
         user_config.state = StateMachine.ADD_FRIEND
@@ -33,7 +46,18 @@ def add_friend(message: Message):
 def get_friends(message: Message):
     with bot_context.user_config_session(message.from_user.id) as user_config:
         friend_ids = user_config.friend_ids
-    bot_context.bot.reply_to(message, f"Список ваших друзей: {friend_ids}")
+    if not friend_ids:
+        bot_context.bot.reply_to(
+            message,
+            "У вас пока нет друзей. Вы можете добавить друга с помощью команды"
+            "/add\_friend"
+        )
+        return
+    reply_text = f"Список ваших друзей:\n\n"
+    for friend_id in friend_ids:
+        player = get_player_info(friend_id)
+        reply_text += player.to_md() + '\n\n'
+    bot_context.bot.reply_to(message, reply_text)
 
 
 @bot_context.bot.message_handler(commands=["delete_friend"])
@@ -44,17 +68,28 @@ def delete_friend(message: Message):
         bot_context.bot.reply_to(
             message,
             f"У вас нет друзей (\n"
-            f"Если хотите удалить друзей, сначала их добавьте с помощью команды /add\_friend"
+            f"Если хотите удалить друзей, сначала их добавьте с помощью "
+            f"команды /add\_friend"
         )
         with bot_context.user_config_session(message.from_user.id) as user_config:
             user_config.state = StateMachine.MAIN
             return
-    bot_context.bot.reply_to(
-        message,
-        f"Введите id друга, которого хотите удалить. Список ваших друзей: {friend_ids}."
-    )
+    reply_message = "Кликните на ID друга, которого хотите удалить: \n\n"
+    for friend_id in friend_ids:
+        friend = get_player_info(friend_id)
+        reply_message += friend.to_md2() + '\n\n'
+    bot_context.bot.reply_to(message, reply_message)
     with bot_context.user_config_session(message.from_user.id) as user_config:
         user_config.state = StateMachine.DELETE_FRIEND
+
+
+def get_match_representation_md(player_id: int, tournament: Tournament) -> str:
+    player = get_player_info(player_id)
+    msg = (
+        f"Ваш друг {player.to_md_one_str()} "
+        f"будет участвовать в турнире {tournament.to_md_one_str()}"
+    )
+    return msg
 
 
 @bot_context.bot.message_handler(commands=["get_tournaments_info"])
@@ -77,23 +112,63 @@ def get_tournaments_info(message: Message):
         bot_context.bot.reply_to(message, "Ваши друзья пока не записались на турниры.")
         return
     msg = "Список друзей, которые будут играть в турнирах в ближайшие несколько дней:\n"
-    for player_id, tournament_id in info.items():
-        one_str = (
-            f"Друг "
-            f"[{player_id}](https://m.rttf.ru/players/{player_id}) "
-            f"будет участвовать в турнире "
-            f"[{tournament_id}](https://m.rttf.ru/tournaments/{tournament_id})\n")
-        msg += one_str
+    for player_id, tournaments in info.items():
+        for tournament in tournaments:
+            match_representation = get_match_representation_md(player_id, tournament)
+            msg += '---\n' + match_representation + '\n'
     bot_context.bot.reply_to(message, msg)
+
+
+@bot_context.bot.message_handler(commands=["load_user_config_matching"])
+def load_user_config_matching(message: Message):
+    with bot_context.user_config_session(message.from_user.id) as user_config:
+        user_state = user_config.state
+    if user_state != StateMachine.ADMIN:
+        return
+    bot_context.load_user_config_matching()
+    bot_context.bot.reply_to(message, 'С-с-сделано.')
+
+
+@bot_context.bot.message_handler(commands=["get_user_ids"])
+def get_user_ids(message: Message):
+    with bot_context.user_config_session(message.from_user.id) as user_config:
+        user_state = user_config.state
+    if user_state != StateMachine.ADMIN:
+        return
+    user_ids = bot_context.get_user_config_matching_copy().keys()
+    reply_message = ', '.join(map(str, user_ids))
+    bot_context.bot.reply_to(message, reply_message)
+
+
+@bot_context.bot.message_handler(commands=["get_user_config"])
+def get_user_config(message: Message):
+    with bot_context.user_config_session(message.from_user.id) as user_config:
+        user_state = user_config.state
+    if user_state != StateMachine.ADMIN:
+        return
+    user_id = parse_int(message.text[17:])
+    user_config = bot_context.get_user_config_matching_copy().get(user_id, None)
+    bot_context.bot.reply_to(message, f"```\n{str(user_config)}\n```", parse_mode=None)
 
 
 @bot_context.bot.message_handler(func=lambda message: True)
 def answer_to_message(message: Message):
     with bot_context.user_config_session(message.from_user.id) as user_config:
+        if message.text == settings.ADMIN_PASSWORD:
+            if user_config.state == StateMachine.ADMIN:
+                user_config.state = StateMachine.MAIN
+                bot_context.bot.reply_to(
+                    message, f"Вы вышли из режима админа."
+                )
+                return
+            user_config.state = StateMachine.ADMIN
+            bot_context.bot.reply_to(message, get_text("admin.txt"))
+
+    with bot_context.user_config_session(message.from_user.id) as user_config:
         user_state = user_config.state
     if user_state == StateMachine.MAIN:
         bot_context.bot.reply_to(
-            message, "Чтобы узнать о возможностях бота, введите команду /start."
+            message, "Чтобы узнать о возможностях бота, введите команду /help."
         )
     if user_state == StateMachine.ADD_FRIEND:
         if friend_id := parse_id(message.text):
@@ -104,13 +179,14 @@ def answer_to_message(message: Message):
                 else:
                     user_config.friend_ids.add(friend_id)
                 user_config.state = StateMachine.MAIN
+            player = get_player_info(friend_id)
             if already_in_friends:
                 bot_context.bot.reply_to(
-                    message, f"У вас уже есть друг с ID {friend_id}."
+                    message, f"У вас уже есть друг {player.to_md_one_str()}."
                 )
             else:
                 bot_context.bot.reply_to(
-                    message, f"Друг с ID {friend_id} успешно добавлен."
+                    message, f"Друг {player.to_md_one_str()} успешно добавлен."
                 )
             return
         if search_str := get_valid_initials(message.text):
@@ -121,30 +197,19 @@ def answer_to_message(message: Message):
                     message,
                     f"К сожалению, никто не найден (\n"
                     f"Попробуйте ещё раз. "
-                    f"Если больше не хотите добавлять друзей, введите /start",
+                    f"Если больше не хотите добавлять друзей, введите /back",
                 )
                 return
             ans_message = (
-                "Есть ли среди приведённых ниже людей ваш друг? Если да, введите его id.\n"
+                "Есть ли среди приведённых ниже людей ваш друг? "
+                "Если да, кликните на его ID.\n"
                 "Если нет, попробуйте ввести его инициалы ещё раз. "
                 "И помните: сначала фамилия, затем имя!\n\n"
                 "Если больше не хотите добавлять друзей, введите /start\n\n"
             )
 
-            # Заголовок таблицы
-            ans_message += "| Ранг | Имя                | Город        | Рейтинг | Профиль            |\n"
-            ans_message += "|------|--------------------|--------------|---------|--------------------|\n"
-
-            # Данные игроков
             for player in players:
-                player_str = (
-                    f"| {player['rank']:<4} | "
-                    f"{player['name']:<18} | "
-                    f"{player['city']:<12} | "
-                    f"{player['rating']:<7} | "
-                    f"[Профиль]({player['profile_link']}) |\n"
-                )
-                ans_message += player_str
+                ans_message += '---\n' + player.to_md2() + '\n'
 
             bot_context.bot.reply_to(message, ans_message)
             return

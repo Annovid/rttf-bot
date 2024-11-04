@@ -22,6 +22,8 @@ def parse_int(msg: str) -> int | None:
 
 
 def parse_id(msg: str) -> int | None:
+    msg = msg.lstrip('/')
+
     # Строка начинается с числа
     if result := parse_int(msg):
         return result
