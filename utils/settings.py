@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     TOKEN: str = ""
     ADMIN_PASSWORD: str | None = None
+    MAX_WORKERS: int = 25
 
     class Config:
         env_file = ENV_PATH

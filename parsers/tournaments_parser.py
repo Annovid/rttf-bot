@@ -1,18 +1,29 @@
 import logging
+import re
+from enum import Enum
 
 from bs4 import BeautifulSoup
 
 import datetime
 from pydantic import BaseModel, Field
 
+from clients.client import RTTFClient
 from parsers.parser import Parser
+from utils.custom_logger import custom_logger
 from utils.models import Tournament
+
+
+class TournamentStatus(Enum):
+    COMPLETED = "completed"  # Тот, который прошёл
+    ONGOING = "ongoing"  # Идёт сейчас
+    PLANNED = "planned"  # Запланирован
 
 
 class TournamentParseResult(BaseModel):
     id: int = Field(description="Tournament ID")
     datetime: str = Field(description="Tournament datetime")
     name: str = Field(str, description="Name of the tournament")
+    # status: TournamentStatus = Field(description="Status of the tournament")
     players: str = Field(
         int, description="Players participating in the tournament"
     )
@@ -20,6 +31,13 @@ class TournamentParseResult(BaseModel):
         int, description="Mean rating of the tournament"
     )
     type: str = Field(int | None, description="Max rating")
+
+
+class TournamentsParseResult(BaseModel):
+    tournaments: list[TournamentParseResult] = Field(
+        list[TournamentParseResult]
+    )
+    expected_total_count: int | None = Field(int | None)
 
 
 def transform_dict_for_tr(data: dict) -> dict:
@@ -44,8 +62,9 @@ class TournamentsParser(Parser):
 
         tournaments = []
         current_date = None
+        elements = tbody.find_all("tr")
 
-        for row in tbody.find_all("tr"):
+        for row in elements:
             if cls._is_date_row(row):
                 current_date = cls._parse_date(row)
                 continue
@@ -53,8 +72,25 @@ class TournamentsParser(Parser):
             if cls._is_tournament_row(row):
                 tournament = cls._parse_tournament(row, current_date)
                 tournaments.append(TournamentParseResult(**tournament))
-
+        if current_date is None:
+            logging.warning("День не распаршен!")
+            return tournaments
+        total_count = cls.get_tournaments_count(soup)
+        if total_count is None:
+            if current_date != datetime.date.today():
+                custom_logger.warning("Количество турниров не распаршено")
+        elif total_count != len(tournaments):
+            custom_logger.warning("Количество турниров расходится с ожиданием")
         return tournaments
+
+    @classmethod
+    def get_tournaments_count(cls, row) -> int | None:
+        total_element = row.find("td", text=re.compile(r"итого:\s*(\d+)"))
+        if total_element:
+            match = re.search(r"\d+", total_element.text)
+            if match:
+                total_count = int(match.group())
+                return total_count
 
     @classmethod
     def _is_date_row(cls, row):
@@ -72,7 +108,9 @@ class TournamentsParser(Parser):
     @classmethod
     def _is_tournament_row(cls, row):
         """Проверяет, является ли строка турниром."""
-        return "class" in row.attrs and "reg" in row["class"]
+        is_ongoing = "class" in row.attrs and "reg" in row["class"]
+        is_completed = "onclick" in row.attrs
+        return is_ongoing or is_completed
 
     @classmethod
     def _parse_tournament(cls, row, current_date):
@@ -101,8 +139,12 @@ class TournamentsParser(Parser):
 
 
 def main():
-    with open("htmls/tournaments/tournaments.html", "r") as f:
-        page = f.read()
+    # with open("htmls/tournaments/tournaments.html", "r") as f:
+    #     page = f.read()
+    page = RTTFClient().get_list_of_tournaments(
+        date_from=datetime.date(2024, 11, 8),
+        date_to=datetime.date(2024, 11, 10),
+    )
     parse_result = TournamentsParser()._parse_data(page)
     print("\n".join(map(str, parse_result)))
 

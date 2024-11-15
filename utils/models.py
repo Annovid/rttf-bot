@@ -30,18 +30,18 @@ class UserConfig:
     def to_dict(self) -> dict[str, Any]:
         """Конвертирует объект в словарь."""
         return {
-            'id': self.id,
-            'state_machine': self.state.value,
-            'friend_ids': list(self.friend_ids),
+            "id": self.id,
+            "state_machine": self.state.value,
+            "friend_ids": list(self.friend_ids),
         }
 
     @classmethod
-    def from_dict(cls, state_dict: dict[str, Any]) -> 'UserConfig':
+    def from_dict(cls, state_dict: dict[str, Any]) -> "UserConfig":
         """Инициализирует объект из словаря."""
         return UserConfig(
             id=state_dict["id"],
             state=StateMachine(state_dict["state_machine"]),
-            friend_ids = set(state_dict["friend_ids"])
+            friend_ids=set(state_dict["friend_ids"]),
         )
 
 
@@ -50,8 +50,10 @@ class DateRange:
     date_from: datetime.date
     date_to: datetime.date
 
-    def __init__(self, days_from: int = 0, days_to: int = 1):
-        self.date_from = datetime.date.today() + datetime.timedelta(days=days_from)
+    def __init__(self, days_from: int = 0, days_to: int = 4):
+        self.date_from = datetime.date.today() + datetime.timedelta(
+            days=days_from
+        )
         self.date_to = datetime.date.today() + datetime.timedelta(days=days_to)
 
 
@@ -66,14 +68,14 @@ class Player:
 
     def __repr__(self):
         return (
-            f'Player('
-            f'id={self.id}, '
-            f'name={self.name}, '
-            f'nickname={self.nickname}, '
-            f'rating={self.rating}, '
-            f'city={self.city}, '
-            f'hand={self.hand}'
-            f')'
+            f"Player("
+            f"id={self.id}, "
+            f"name={self.name}, "
+            f"nickname={self.nickname}, "
+            f"rating={self.rating}, "
+            f"city={self.city}, "
+            f"hand={self.hand}"
+            f")"
         )
 
     def __post_init__(self):
@@ -129,27 +131,19 @@ class Tournament:
             )
 
     def __repr__(self):
-        return (
-            f'Tournament('
-            f'id={self.id}, '
-            f'name={self.name}'
-            f')'
-        )
+        return f"Tournament(" f"id={self.id}, " f"name={self.name}" f")"
 
     def to_md(self):
         registered_players_representation = (
-            '\n'.join(map(Player.to_md_one_str, self.registered_players))  # noqa
+            "\n".join(map(Player.to_md_one_str, self.registered_players))  # noqa
         )
         md_representation = [
             f"*ID*: [{self.id}](https://m.rttf.ru/players/{self.id})",
             f"*Name*: {self.name}",
-            f"*Registered players*:\n"
-            f"{registered_players_representation}"
+            f"*Registered players*:\n" f"{registered_players_representation}",
         ]
         # Join non-empty strings with new lines
         return "\n".join(filter(bool, md_representation))
 
     def to_md_one_str(self) -> str:
-        return (
-            f"[{self.id}](https://m.rttf.ru/tournaments/{self.id}): *{self.name}*"
-        )
+        return f"[{self.id}](https://m.rttf.ru/tournaments/{self.id}): *{self.name}*"

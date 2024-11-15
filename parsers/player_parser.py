@@ -13,8 +13,8 @@ class PlayerParser(Parser):
         player_id = None
         elements = soup.find_all("a")
         for element in elements:
-            if element.get_text() == 'Профиль':
-                player_id = int(element.get('href').split('/')[-1])
+            if element.get_text() == "Профиль":
+                player_id = int(element.get("href").split("/")[-1])
         if not player_id:
             raise Exception("Player id not found")
 

@@ -38,7 +38,9 @@ class DBUserConfig(Base):
             db_user_config.config = user_config.to_dict()
         else:
             # Если конфигурации нет, создаем новую запись DBUserConfig
-            db_user_config = DBUserConfig(id=user_config.id, config=user_config.to_dict())
+            db_user_config = DBUserConfig(
+                id=user_config.id, config=user_config.to_dict()
+            )
             session.add(db_user_config)
 
         session.commit()

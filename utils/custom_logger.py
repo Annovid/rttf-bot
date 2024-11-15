@@ -30,7 +30,7 @@ class CustomLogger:
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-        logger.info('Logger setup')
+        logger.info("Logger setup")
         return logger
 
 

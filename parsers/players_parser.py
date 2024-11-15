@@ -22,15 +22,15 @@ class PlayersParser(Parser):
             # Извлечение данных из ячеек
             rank = cells[0].text.strip()  # Рейтинг
             name = cells[1].text.strip()  # Имя
-            player_id = int(cells[1].find("a")["href"].split('/')[-1])
+            player_id = int(cells[1].find("a")["href"].split("/")[-1])
             city = cells[2].text.strip()  # Город
             rating = cells[3].find("dfn").text.strip()  # Рейтинг игрока
 
             player = Player(
-                id = player_id,
-                name = name,
-                city = city,
-                rating = rating,
+                id=player_id,
+                name=name,
+                city=city,
+                rating=rating,
             )
 
             players_data.append(player)

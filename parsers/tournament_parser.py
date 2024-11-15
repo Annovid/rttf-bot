@@ -12,12 +12,18 @@ class TournamentParser(Parser):
         tournament_info = soup.find("h1")
         time_element = tournament_info.find("time")
         date_time = time_element.text.strip()  # Извлечение даты и времени
-        tournament_name = tournament_info.text.replace(date_time, '').strip()  # Извлечение названия турнира
-        tournament_location = tournament_info.find("var").text.strip()  # Извлечение места
+        tournament_name = tournament_info.text.replace(
+            date_time, ""
+        ).strip()  # Извлечение названия турнира
+        tournament_location = tournament_info.find(
+            "var"
+        ).text.strip()  # Извлечение места
 
         # Извлечение идентификатора турнира
         tournament_link = soup.find("a", href=True, rel="nofollow")
-        tournament_id = int(tournament_link['href'].split('%2F')[-1])  # Получение
+        tournament_id = int(
+            tournament_link["href"].split("%2F")[-1]
+        )  # Получение
         # идентификатора из ссылки
 
         registered_player_ids = cls._parse_registered_players(soup)
@@ -29,10 +35,16 @@ class TournamentParser(Parser):
             registered_players=registered_player_ids,
             refused_players=refused_player_ids,
         )
+
     @classmethod
     def _parse_registered_players(cls, soup: BeautifulSoup) -> list[Player]:
         players = []
-        table = soup.find("table", class_="tablesort")  # Таблица участников
+        table_completted = soup.find("table", class_="tablesort tour-players")
+        table = (
+            table_completted
+            if table_completted
+            else soup.find("table", class_="tablesort")
+        )
         if table is None:
             return []
         tbody = table.find("tbody")
@@ -46,7 +58,7 @@ class TournamentParser(Parser):
                     cells[1].find("a")["href"] if cells[1].find("a") else None
                 )
                 player = Player(
-                    id=int(player_link.split('/')[-1].split('?')[0]),
+                    id=int(player_link.split("/")[-1].split("?")[0]),
                     name=cells[1].text.strip(),
                 )
                 players.append(player)
@@ -70,7 +82,7 @@ class TournamentParser(Parser):
                     cells[1].find("a")["href"] if cells[1].find("a") else None
                 )
                 player = Player(
-                    id=int(player_link.split('/')[-1]),
+                    id=int(player_link.split("/")[-1]),
                     name=cells[1].text.strip(),
                 )
                 withdrawn_players.append(player)
@@ -79,9 +91,11 @@ class TournamentParser(Parser):
 
 
 def main():
-    with open("resources/temp.html", "r") as f:
+    with open("htmls/2024-11-02/current_pait.html", "r") as f:
         page = f.read()
-    parse_result = TournamentParser()._parse_data(page)
+    parse_result = TournamentParser().parse_data(page)
+    if not parse_result:
+        raise Exception("Failed to parse tournament page")
     print(parse_result)
     print(parse_result.to_md())
 

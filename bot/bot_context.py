@@ -14,17 +14,18 @@ class BotContext:
     def __init__(self):
         self.bot: telebot.TeleBot = telebot.TeleBot(
             settings.TOKEN,
-            parse_mode='Markdown',
+            parse_mode="Markdown",
             disable_web_page_preview=True,
         )
-        self.__user_config_matching: dict[int, UserConfig] = defaultdict(UserConfig)
+        self.__user_config_matching: dict[int, UserConfig] = defaultdict(
+            UserConfig
+        )
 
     def load_user_config_matching(self) -> None:
         with open_session() as session:
             user_configs = DBUserConfig.get_all(session)
             self.__user_config_matching = {
-                user_config.id: user_config
-                for user_config in user_configs
+                user_config.id: user_config for user_config in user_configs
             }
 
     @contextlib.contextmanager
