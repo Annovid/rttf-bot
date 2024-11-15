@@ -11,7 +11,7 @@ Base = declarative_base()
 
 
 class DBUserConfig(Base):
-    __tablename__ = "user_configs"
+    __tablename__ = 'user_configs'
 
     id: int = sa.Column(sa.Integer, primary_key=True)
     config: dict = sa.Column(sa.JSON)
@@ -19,11 +19,11 @@ class DBUserConfig(Base):
     @classmethod
     def get_all(cls, session: Session) -> list[UserConfig]:
         """Возвращает список всех конфигураций пользователей."""
-        db_res: list["DBUserConfig"] = session.query(cls).all()  # noqa
+        db_res: list['DBUserConfig'] = session.query(cls).all()  # noqa
         return [UserConfig.from_dict(db_config.config) for db_config in db_res]
 
     @classmethod
-    def get_by_id(cls, session: Session, user_id: int) -> "DBUserConfig":
+    def get_by_id(cls, session: Session, user_id: int) -> 'DBUserConfig':
         """Возвращает объект DBUserConfig по ID, если он существует."""
         return session.query(cls).filter_by(id=user_id).first()
 
@@ -38,7 +38,9 @@ class DBUserConfig(Base):
             db_user_config.config = user_config.to_dict()
         else:
             # Если конфигурации нет, создаем новую запись DBUserConfig
-            db_user_config = DBUserConfig(id=user_config.id, config=user_config.to_dict())
+            db_user_config = DBUserConfig(
+                id=user_config.id, config=user_config.to_dict()
+            )
             session.add(db_user_config)
 
         session.commit()
