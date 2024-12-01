@@ -5,7 +5,9 @@ from utils.models import Player
 
 def get_player_info(player_id: int) -> Player:
     player_page = RTTFClient().get_player(player_id)
-    player = PlayerParser.parse_data(player_page)
+    player: Player = PlayerParser.parse_data(player_page)
+    if not player:
+        raise ValueError('Player parsing error')
     return player
 
 

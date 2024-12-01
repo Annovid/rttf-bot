@@ -23,8 +23,7 @@ class BotContext:
         with open_session() as session:
             user_configs = DBUserConfig.get_all(session)
             self.__user_config_matching = {
-                user_config.id: user_config
-                for user_config in user_configs
+                user_config.id: user_config for user_config in user_configs
             }
 
     @contextlib.contextmanager
@@ -47,6 +46,3 @@ class BotContext:
 
     def get_user_config_matching_copy(self) -> dict[int, UserConfig]:
         return deepcopy(self.__user_config_matching)
-
-
-bot_context = BotContext()
