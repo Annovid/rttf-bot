@@ -26,6 +26,13 @@ class UserService:
             return UserConfig.from_dict(db_user_config.config)
 
     @staticmethod
+    def get_all_user_ids() -> list[int]:
+        """Возвращает список ID всех пользователей."""
+        with open_session() as session:
+            query_result = session.query(DBUserConfig.id).all()
+        return [row.id for row in query_result]
+
+    @staticmethod
     def save_user_config(user_config: UserConfig) -> None:
         """Сохраняет конфигурацию пользователя в базу данных."""
         with open_session() as session:
