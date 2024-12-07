@@ -1,13 +1,15 @@
-from telegram import Message
-from bot.bot_context import BotContext
+import telebot
+from telebot.types import Message
+
+from bot.bot_context import BotContext, extended_message_handler, bot_context
 from utils.models import StateMachine
 from utils.rttf import get_player_info
 
 
 def register_handlers(bot_context: BotContext):
-    bot = bot_context.bot
+    message_handler = extended_message_handler(bot_context.bot.message_handler)
 
-    @bot.message_handler(commands=['add_friend'])
+    @message_handler(commands=['add_friend'])
     def add_friend(message: Message):
         bot_context.bot.reply_to(
             message,
@@ -22,7 +24,7 @@ def register_handlers(bot_context: BotContext):
         with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
             user_config.state = StateMachine.ADD_FRIEND
 
-    @bot.message_handler(commands=['get_friends'])
+    @message_handler(commands=['get_friends'])
     def get_friends(message: Message):
         with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
             friend_ids = user_config.friend_ids
@@ -43,7 +45,7 @@ def register_handlers(bot_context: BotContext):
                 reply_text += friend.to_md2() + '\n\n'
         bot_context.bot.reply_to(message, reply_text)
 
-    @bot.message_handler(commands=['delete_friend'])
+    @message_handler(commands=['delete_friend'])
     def delete_friend(message: Message):
         with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
             friend_ids = user_config.friend_ids

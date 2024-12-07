@@ -1,6 +1,6 @@
-from telegram import Message
+from telebot.types import Message
 
-from bot.bot_context import BotContext
+from bot.bot_context import BotContext, extended_message_handler
 from services.get_tournament_info import TournamentService
 from utils.models import Tournament
 from utils.rttf import get_player_info
@@ -8,6 +8,7 @@ from utils.rttf import get_player_info
 
 def register_handlers(bot_context: BotContext):
     bot = bot_context.bot
+    message_handler = extended_message_handler(bot.message_handler)
     tournament_service = TournamentService()
 
     def get_match_representation_md(player_id: int, tournament: Tournament) -> str:
@@ -18,7 +19,7 @@ def register_handlers(bot_context: BotContext):
         )
         return msg
 
-    @bot.message_handler(commands=['get_tournaments_info'])
+    @message_handler(commands=['get_tournaments_info'])
     def get_tournaments_info(message: Message):
         with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
             friend_ids = user_config.friend_ids

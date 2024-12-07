@@ -1,7 +1,7 @@
 from bot.bot_context import BotContext
 from clients.client import RTTFClient
 from parsers.players_parser import PlayersParser
-from telegram import Message
+from telebot.types import Message
 from utils.general import parse_id, get_valid_initials
 from utils.models import StateMachine
 from utils.rttf import get_player_info

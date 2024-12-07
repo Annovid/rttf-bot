@@ -23,7 +23,7 @@ class DBUserConfig(Base):
         return [UserConfig.from_dict(db_config.config) for db_config in db_res]
 
     @classmethod
-    def get_by_id(cls, session: Session, user_id: int) -> 'DBUserConfig':
+    def get_by_id(cls, session: Session, user_id: int) -> 'DBUserConfig | None':
         """Возвращает объект DBUserConfig по ID, если он существует."""
         return session.query(cls).filter_by(id=user_id).first()
 

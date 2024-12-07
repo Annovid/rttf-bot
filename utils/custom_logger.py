@@ -19,7 +19,7 @@ class CustomLogger:
         file_handler.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            '%(asctime)s - %(name)s - %(levelname)-8s - %(message)s'
         )
         file_handler.setFormatter(formatter)
 
