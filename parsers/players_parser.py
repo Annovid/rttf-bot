@@ -6,7 +6,7 @@ from utils.models import Player
 
 class PlayersParser(Parser):
     @classmethod
-    def _parse_data(cls, page: str):
+    def _parse_data(cls, page: str) -> list[Player]:
         soup = BeautifulSoup(page, 'html.parser')
         players_data = []
 

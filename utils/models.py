@@ -3,6 +3,8 @@ import enum
 from dataclasses import dataclass, field
 from typing import Any
 
+from utils.custom_logger import logger
+
 
 class StateMachine(enum.Enum):
     MAIN = 'main_state'
@@ -61,7 +63,9 @@ class DateRange:
         date_from: datetime.date | None = None,
         date_to: datetime.date | None = None,
     ):
-        self.date_from = date_from if date_from is not None else datetime.date.today()
+        date_today = datetime.date.today()
+        logger.info(f"Current date (today): {date_today}")
+        self.date_from = date_from if date_from is not None else date_today
         self.date_to = (
             date_to if date_to else self.date_from + datetime.timedelta(days=1)
         )

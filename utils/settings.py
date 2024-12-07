@@ -2,7 +2,7 @@ import os
 
 from pydantic_settings import BaseSettings
 
-ENV_PATH = os.path.join(os.getcwd(), 'resources', '.env')
+ENV_PATH = os.path.join(os.getcwd(), '.env')
 
 
 class Settings(BaseSettings):
