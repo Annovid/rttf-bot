@@ -1,5 +1,5 @@
 from bot.bot_context import BotContext
-from telegram import Message
+from telebot.types import Message
 
 
 def answer(bot_context: BotContext, message: Message):

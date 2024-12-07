@@ -26,6 +26,8 @@ class UserConfig:
     id: int
     state: StateMachine = StateMachine.MAIN
     friend_ids: set[int] = field(default_factory=set)
+    username: str | None = ""
+    full_name: str | None = ""
 
     def to_dict(self) -> dict[str, Any]:
         """Конвертирует объект в словарь."""
@@ -33,15 +35,19 @@ class UserConfig:
             'id': self.id,
             'state_machine': self.state.value,
             'friend_ids': list(self.friend_ids),
+            'username': self.username,
+            'full_name': self.full_name,
         }
 
     @classmethod
-    def from_dict(cls, state_dict: dict[str, Any]) -> 'UserConfig':
+    def from_dict(cls, user_config_dict: dict[str, Any]) -> 'UserConfig':
         """Инициализирует объект из словаря."""
         return UserConfig(
-            id=state_dict['id'],
-            state=StateMachine(state_dict['state_machine']),
-            friend_ids=set(state_dict['friend_ids']),
+            id=user_config_dict['id'],
+            state=StateMachine(user_config_dict['state_machine']),
+            friend_ids=set(user_config_dict['friend_ids']),
+            username=user_config_dict.get('username', ''),
+            full_name=user_config_dict.get('full_name', ''),
         )
 
 

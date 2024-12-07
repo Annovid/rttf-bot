@@ -3,8 +3,8 @@ from typing import Callable
 from bot.handlers.answer_to_message import main, add_friend, delete_friend
 from clients.client import RTTFClient
 from parsers.players_parser import PlayersParser
-from telegram import Message
-from bot.bot_context import BotContext
+from telebot.types import Message
+from bot.bot_context import BotContext, extended_message_handler
 from utils.custom_logger import logger
 from utils.general import get_text, parse_id, get_valid_initials
 from utils.models import StateMachine
@@ -23,9 +23,10 @@ STATE_COMMAND_MATCHING: dict[
 
 def register_handlers(bot_context: BotContext):
     bot = bot_context.bot
+    message_handler = extended_message_handler(bot.message_handler)
 
     def handle_admin(message: Message):
-        with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
+        with bot_context.user_config_session(message) as user_config:
             if user_config.state == StateMachine.ADMIN:
                 user_config.state = StateMachine.MAIN
                 bot_context.bot.reply_to(message, f'Вы вышли из режима админа.')
@@ -33,13 +34,13 @@ def register_handlers(bot_context: BotContext):
             user_config.state = StateMachine.ADMIN
             bot_context.bot.reply_to(message, get_text('admin.txt'))
 
-    @bot.message_handler(func=lambda message: True)
+    @message_handler(func=lambda message: True)
     def answer_to_message(message: Message):
         if message.text == settings.ADMIN_PASSWORD:
             handle_admin(message)
             return
 
-        with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
+        with bot_context.user_config_session(message) as user_config:
             user_state = user_config.state
         command: Callable[[BotContext, Message], None] | None = (
             STATE_COMMAND_MATCHING.get(user_state)
@@ -49,5 +50,5 @@ def register_handlers(bot_context: BotContext):
             return
         new_state_machine: StateMachine | None = command(bot_context, message)
         if new_state_machine is not None:
-            with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
+            with bot_context.user_config_session(message) as user_config:
                 user_config.state = new_state_machine

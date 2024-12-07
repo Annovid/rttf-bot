@@ -1,11 +1,12 @@
 import contextlib
-from collections import defaultdict
+import time
 from copy import deepcopy
+from functools import wraps
 
 import telebot
 
-from db.models import DBUserConfig
-from db.session_factory import open_session
+from services.user_service import UserService
+from utils.custom_logger import logger
 from utils.models import UserConfig
 from utils.settings import settings
 
@@ -17,32 +18,49 @@ class BotContext:
             parse_mode='Markdown',
             disable_web_page_preview=True,
         )
-        self.__user_config_matching: dict[int, UserConfig] = defaultdict(UserConfig)
-
-    def load_user_config_matching(self) -> None:
-        with open_session() as session:
-            user_configs = DBUserConfig.get_all(session)
-            self.__user_config_matching = {
-                user_config.id: user_config for user_config in user_configs
-            }
+        self.user_config_service: UserService = UserService()
 
     @contextlib.contextmanager
-    def user_config_session(self, user_id: int) -> UserConfig:
-        def save_config(config: UserConfig) -> None:
-            self.__user_config_matching[user_id] = config
-            with open_session() as session:
-                DBUserConfig.save_config(user_config=config, session=session)
-
-        if user_id not in self.__user_config_matching.keys():
-            new_config = UserConfig(id=user_id)
-            save_config(new_config)
-
-        old_config = self.__user_config_matching[user_id]
+    def user_config_session(self, message: telebot.types.Message) -> UserConfig:
+        old_config = self.user_config_service.get_user_config(message.from_user.id)
         new_config = deepcopy(old_config)
+        new_config.username = message.from_user.username
+        new_config.full_name = message.from_user.full_name
         yield new_config
-
         if new_config != old_config:
-            save_config(new_config)
+            self.user_config_service.save_user_config(new_config)
 
-    def get_user_config_matching_copy(self) -> dict[int, UserConfig]:
-        return deepcopy(self.__user_config_matching)
+
+def extended_message_handler(handler_decorator):
+    """Обертка над bot.message_handler с добавлением кастомной логики."""
+
+    def decorator(commands=None, **kwargs):
+        def wrapper(handler_function):
+            @wraps(handler_function)
+            def wrapped_handler(message, *args, **kwargs_wrapped):
+                start_time = time.time()
+                user_id = message.from_user.id
+                user_text = message.text[:100] if message.text else "<non-text content>"
+                logger.info(
+                    f"Handler '{handler_function.__name__}' called by user {user_id} "
+                    f"with message: {user_text!r}"
+                )
+                try:
+                    result = handler_function(message, *args, **kwargs_wrapped)
+                finally:
+                    elapsed_time = time.time() - start_time
+                    logger.info(
+                        f"Handler '{handler_function.__name__}' finished "
+                        f"in {elapsed_time:.2f}s for user {user_id}"
+                    )
+
+                return result
+            return handler_decorator(commands=commands, **kwargs)(wrapped_handler)
+        return wrapper
+    return decorator
+
+
+# Initializing bot context
+logger.debug('Initializing BotContext...')
+bot_context = BotContext()
+logger.info('BotContext initialized successfully.')
