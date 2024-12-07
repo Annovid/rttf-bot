@@ -45,10 +45,11 @@ class UserService:
     @staticmethod
     def _create_default_user_config(user_id: int, session: sa.orm.Session) -> UserConfig:
         """Создает и сохраняет новую конфигурацию пользователя с настройками по умолчанию."""
-        db_user_config = UserConfig(id=user_id)
+        user_config = UserConfig(id=user_id)
+        db_user_config = DBUserConfig(id=user_id, config=user_config.to_dict())
         session.add(db_user_config)
         session.commit()
-        return db_user_config
+        return user_config
 
     @staticmethod
     def delete_user_config(user_id: int) -> None:

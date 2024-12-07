@@ -29,7 +29,7 @@ class TournamentService:
         friend_ids: set[int],
         date_range: DateRange = DateRange(),
     ) -> dict[int, list[Tournament]]:
-        matchings: dict[int, list[Tournament]] = defaultdict(list)
+        matching: dict[int, list[Tournament]] = defaultdict(list)
         tournaments_page = RTTFClient.get_list_of_tournaments(date_range=date_range)
         with ThreadPool(settings.MAX_WORKERS) as pool:
             tournaments_parse_result = pool.map(
@@ -47,8 +47,8 @@ class TournamentService:
         for tournament in tournaments_parse_result:
             sub_matching = self.process_tournament(tournament, friend_ids)
             for friend_id, tournament in sub_matching:
-                matchings[friend_id].append(tournament)
-        return matchings
+                matching[friend_id].append(tournament)
+        return matching
 
     @classmethod
     def process_tournament(
@@ -73,7 +73,7 @@ class TournamentService:
 
 def main():
     timestamp_start = time.time()
-    matchings = GetTournamentInfoCommand().get_tournament_info(
+    matching = TournamentService().get_tournament_info(
         friend_ids={168970},
         date_range=DateRange.from_ints(
             days_from=0,
@@ -83,7 +83,7 @@ def main():
     timestamp_end = time.time()
     execution_time = timestamp_end - timestamp_start
     print(f'Выполнение команды заняло {execution_time:.4f} секунд')
-    print(matchings)
+    print(matching)
 
 
 if __name__ == '__main__':

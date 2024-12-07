@@ -21,7 +21,7 @@ def register_handlers(bot_context: BotContext):
 
     @message_handler(commands=['get_tournaments_info'])
     def get_tournaments_info(message: Message):
-        with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
+        with bot_context.user_config_session(message) as user_config:
             friend_ids = user_config.friend_ids
         if not friend_ids:
             bot_context.bot.reply_to(

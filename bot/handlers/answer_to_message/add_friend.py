@@ -11,30 +11,38 @@ from utils.rttf import get_player_info
 def answer(bot_context: BotContext, message: Message) -> StateMachine | None:
     if friend_id := parse_id(message.text):
         already_in_friends = False
-        with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
+        with bot_context.user_config_session(message) as user_config:
             if friend_id in user_config.friend_ids:
                 already_in_friends = True
-            else:
-                user_config.friend_ids.add(friend_id)
             user_config.state = StateMachine.MAIN
         try:
             player = get_player_info(friend_id)
-        except Exception:
+            with bot_context.user_config_session(message) as user_config:
+                user_config.friend_ids.add(friend_id)
+        except Exception:  # noqa
             logger.warning(
                 'Exception while getting player_info for friend_id %s', friend_id
             )
             bot_context.bot.reply_to(
                 message,
-                f'Не найден пользователь с ID = {friend_id}. Попробуйте найти друга по *Фамилии и имени*.',
+                f'Не найден пользователь с ID = {friend_id}. '
+                f'Попробуйте найти друга по *Фамилии и имени*. '
+                f'Вы также можете узнать о возможных функциях с помощью метода /start',
             )
-            return
+            return StateMachine.ADD_FRIEND
         if already_in_friends:
             bot_context.bot.reply_to(
-                message, f'У вас уже есть друг {player.to_md_one_str()}.'
+                message,
+                f'У вас уже есть друг {player.to_md_one_str()}. '
+                f'Если хотите ещё раз попытаться добавить друга, введите /add\_friend. '  # noqa
+                f'Вы также можете узнать о возможных функциях с помощью метода /start'
             )
         else:
             bot_context.bot.reply_to(
-                message, f'Друг {player.to_md_one_str()} успешно добавлен.'
+                message,
+                f'Друг {player.to_md_one_str()} успешно добавлен. '
+                f'Если хотите добавить ещё одного друга, введите /add\_friend. '  # noqa
+                f'Вы также можете узнать о возможных функциях с помощью метода /start'
             )
         return
     if search_str := get_valid_initials(message.text):
@@ -45,7 +53,7 @@ def answer(bot_context: BotContext, message: Message) -> StateMachine | None:
                 message,
                 f'К сожалению, никто не найден (\n'
                 f'Попробуйте ещё раз. '
-                f'Если больше не хотите добавлять друзей, введите /back',
+                f'Если больше не хотите добавлять друзей, введите /start',
             )
             return
         ans_message = (

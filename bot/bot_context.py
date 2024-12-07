@@ -18,12 +18,14 @@ class BotContext:
             parse_mode='Markdown',
             disable_web_page_preview=True,
         )
-        self.user_config_service = UserService()
+        self.user_config_service: UserService = UserService()
 
     @contextlib.contextmanager
-    def user_config_session(self, user_id: int) -> UserConfig:
-        old_config = self.user_config_service.get_user_config(user_id)
+    def user_config_session(self, message: telebot.types.Message) -> UserConfig:
+        old_config = self.user_config_service.get_user_config(message.from_user.id)
         new_config = deepcopy(old_config)
+        new_config.username = message.from_user.username
+        new_config.full_name = message.from_user.full_name
         yield new_config
         if new_config != old_config:
             self.user_config_service.save_user_config(new_config)

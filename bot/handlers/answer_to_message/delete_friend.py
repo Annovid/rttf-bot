@@ -10,7 +10,7 @@ from utils.rttf import get_player_info
 def answer(bot_context: BotContext, message: Message) -> StateMachine | None:
     if friend_id := parse_id(message.text):
         was_in_friends = True
-        with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
+        with bot_context.user_config_session(message) as user_config:
             if friend_id in user_config.friend_ids:
                 user_config.friend_ids.discard(friend_id)
             else:

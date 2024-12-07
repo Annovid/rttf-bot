@@ -26,7 +26,7 @@ def register_handlers(bot_context: BotContext):
     message_handler = extended_message_handler(bot.message_handler)
 
     def handle_admin(message: Message):
-        with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
+        with bot_context.user_config_session(message) as user_config:
             if user_config.state == StateMachine.ADMIN:
                 user_config.state = StateMachine.MAIN
                 bot_context.bot.reply_to(message, f'Вы вышли из режима админа.')
@@ -40,7 +40,7 @@ def register_handlers(bot_context: BotContext):
             handle_admin(message)
             return
 
-        with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
+        with bot_context.user_config_session(message) as user_config:
             user_state = user_config.state
         command: Callable[[BotContext, Message], None] | None = (
             STATE_COMMAND_MATCHING.get(user_state)
@@ -50,5 +50,5 @@ def register_handlers(bot_context: BotContext):
             return
         new_state_machine: StateMachine | None = command(bot_context, message)
         if new_state_machine is not None:
-            with bot_context.user_config_session(message.from_user.id) as user_config:  # type: UserConfig
+            with bot_context.user_config_session(message) as user_config:
                 user_config.state = new_state_machine

@@ -10,7 +10,7 @@ def register_handlers(bot_context: BotContext):
 
     @message_handler(commands=['get_user_ids'])
     def get_user_ids(message: Message):
-        with bot_context.user_config_session(message.from_user.id) as user_config:
+        with bot_context.user_config_session(message) as user_config:
             user_state = user_config.state
         if user_state != StateMachine.ADMIN:
             return
@@ -20,7 +20,7 @@ def register_handlers(bot_context: BotContext):
 
     @message_handler(commands=['get_user_config'])
     def get_user_config(message: Message):
-        with bot_context.user_config_session(message.from_user.id) as user_config:
+        with bot_context.user_config_session(message) as user_config:
             user_state = user_config.state
         if user_state != StateMachine.ADMIN:
             return

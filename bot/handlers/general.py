@@ -13,8 +13,9 @@ def register_handlers(bot_context: BotContext) -> None:
         text = get_text('start.txt')
         bot_context.bot.reply_to(message, text)
         user_config = bot_context.user_config_service.get_user_config(message.from_user.id)
+        user_config.name = message.from_user.full_name
         user_config.state = StateMachine.MAIN
-        bot_context.user_config_service.save_user_config()
+        bot_context.user_config_service.save_user_config(user_config)
 
     @message_handler(commands=['help', 'back'])
     def help_or_back(message: Message):
@@ -22,4 +23,5 @@ def register_handlers(bot_context: BotContext) -> None:
         bot_context.bot.reply_to(message, text)
         user_config = bot_context.user_config_service.get_user_config(message.from_user.id)
         user_config.state = StateMachine.MAIN
-        bot_context.user_config_service.save_user_config()
+        user_config.name = message.from_user.full_name
+        bot_context.user_config_service.save_user_config(user_config)
