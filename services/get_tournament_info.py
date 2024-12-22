@@ -29,6 +29,10 @@ class TournamentService:
         friend_ids: set[int],
         date_range: DateRange = DateRange(),
     ) -> dict[int, list[Tournament]]:
+        logger.info(
+            f"Command get_tournament_info called with DateRange: "
+            f"date_from={date_range.date_from}, date_to={date_range.date_to}"
+        )
         matching: dict[int, list[Tournament]] = defaultdict(list)
         tournaments_page = RTTFClient.get_list_of_tournaments(date_range=date_range)
         with ThreadPool(settings.MAX_WORKERS) as pool:
@@ -46,8 +50,8 @@ class TournamentService:
 
         for tournament in tournaments_parse_result:
             sub_matching = self.process_tournament(tournament, friend_ids)
-            for friend_id, tournament in sub_matching:
-                matching[friend_id].append(tournament)
+            for friend_id, tournament_with_friend in sub_matching:
+                matching[friend_id].append(tournament_with_friend)
         return matching
 
     @classmethod

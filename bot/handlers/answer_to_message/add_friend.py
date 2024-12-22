@@ -4,8 +4,36 @@ from parsers.players_parser import PlayersParser
 from telebot.types import Message
 from utils.custom_logger import logger
 from utils.general import parse_id, get_valid_initials
-from utils.models import StateMachine
+from utils.models import StateMachine, Player
 from utils.rttf import get_player_info
+
+
+def fetch_and_parse_players(search_str: str) -> list[Player]:
+    """
+    Метод для получения и парсинга данных игроков.
+    Логирует процесс запроса, получения и выдачи данных.
+    """
+    logger.info(f"Requested players for search string: {search_str}")
+    # Получение данных для исходного поискового запроса
+    players_page = RTTFClient.get_players(search_str)
+    logger.info(f"Received players page for search string: {search_str}")
+    # Парсинг данных
+    players = PlayersParser().parse_data(players_page)
+    logger.info(f"Parsed players for search string: {search_str}")
+
+    # Если поисковый запрос содержит два слова, выполняем поиск с обратным порядком слов
+    if len(search_str.split(' ')) == 2:
+        search_str_new = ' '.join(search_str.split(' ')[::-1])
+        logger.info(f"Requested players for reversed search string: {search_str_new}")
+        players_page_new = RTTFClient.get_players(search_str_new)
+        players_new = PlayersParser().parse_data(players_page_new)
+        logger.info(f"Parsed players for reversed search string: {search_str_new}")
+
+        # Объединяем результаты
+        players = players_new[:6] + players[:6]
+
+    logger.info(f"Returned players for search string: {search_str}")
+    return players
 
 
 def answer(bot_context: BotContext, message: Message) -> StateMachine | None:
@@ -46,8 +74,7 @@ def answer(bot_context: BotContext, message: Message) -> StateMachine | None:
             )
         return
     if search_str := get_valid_initials(message.text):
-        players_page = RTTFClient.get_players(search_str)
-        players = PlayersParser().parse_data(players_page)
+        players = fetch_and_parse_players(search_str)
         if len(players) == 0:
             bot_context.bot.reply_to(
                 message,
@@ -63,7 +90,6 @@ def answer(bot_context: BotContext, message: Message) -> StateMachine | None:
             'И помните: сначала фамилия, затем имя!\n\n'
             'Если больше не хотите добавлять друзей, введите /start\n\n'
         )
-
         for player in players:
             ans_message += '---\n' + player.to_md2() + '\n'
 

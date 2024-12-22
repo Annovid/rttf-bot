@@ -16,6 +16,7 @@ def register_handlers(bot_context: BotContext):
             return
         user_ids = bot_context.user_config_service.get_all_user_ids()
         reply_message = ', '.join(map(str, user_ids))
+        reply_message += f'\nВсего пользователей: {len(user_ids)}'
         bot_context.bot.reply_to(message, reply_message)
 
     @message_handler(commands=['get_user_config'])

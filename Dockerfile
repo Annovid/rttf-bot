@@ -1,6 +1,5 @@
 FROM python:3.10-slim
 
-#RUN pip install --upgrade pip
 RUN pip install poetry
 
 RUN apt-get update && \
@@ -9,9 +8,9 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock* /app/
+COPY pyproject.toml poetry.lock* README.md /app/
 
-RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
+RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi --no-root
 
 COPY . /app
 

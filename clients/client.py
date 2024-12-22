@@ -88,7 +88,6 @@ class RTTFClient:
         Не реализован метод скачивания для диапазона дат, так как не понятно, как
         обойти пагинацию.
         """
-        date_range = DateRange(single_date)
         url = cls.create_url_for_get_list_of_tournaments(
             date_range=DateRange(single_date, single_date)
         )
