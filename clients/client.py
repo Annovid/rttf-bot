@@ -68,7 +68,7 @@ class RTTFClient:
         return all_data
 
     @classmethod
-    def create_url_for_get_list_of_tournaments(
+    def create_url_for_get_tournaments_pages(
         cls,
         date_range: DateRange | None = None,
         only_moscow: bool = True,
@@ -96,16 +96,16 @@ class RTTFClient:
         Не реализован метод скачивания для диапазона дат, так как не понятно, как
         обойти пагинацию.
         """
-        url = cls.create_url_for_get_list_of_tournaments(
+        url = cls.create_url_for_get_tournaments_pages(
             date_range=DateRange(single_date, single_date)
         )
         response = cls.make_request(url)
         return response.text
 
     @classmethod
-    def get_list_of_tournaments(
-        cls,
-        date_range: DateRange | None = None,
+    def get_tournaments_pages(
+            cls,
+            date_range: DateRange | None = None,
     ) -> list[str]:
         if date_range is None:
             date_range = DateRange()
@@ -115,9 +115,7 @@ class RTTFClient:
         ]
         with ThreadPool(settings.MAX_WORKERS) as pool:
             pages = pool.map(cls.get_tournaments_for_date, dates)
-        date_page_mapping = zip(dates, pages)
-        for date, result in date_page_mapping:
-            logger.info(f'Downloaded list of tournaments for date: {date}')
+        date_page_mapping = list(zip(dates, pages))
         return [page for date, page in date_page_mapping]
 
     @classmethod

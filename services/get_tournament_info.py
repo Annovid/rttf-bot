@@ -36,10 +36,10 @@ class TournamentService:
             f"date_from={date_range.date_from}, date_to={date_range.date_to}"
         )
         matching: dict[int, list[Tournament]] = defaultdict(list)
-        tournaments_page = RTTFClient.get_list_of_tournaments(date_range=date_range)
+        tournaments_pages = RTTFClient.get_tournaments_pages(date_range=date_range)
         with ThreadPool(settings.MAX_WORKERS) as pool:
             tournaments_parse_result = pool.map(
-                TournamentsParser.parse_data, tournaments_page
+                TournamentsParser.parse_data, tournaments_pages
             )
 
         tournaments_parse_result = [

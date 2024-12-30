@@ -132,9 +132,7 @@ class TournamentsParser(Parser):
 
 
 def main():
-    # with open("htmls/tournaments/tournaments.html", "r") as f:
-    #     page = f.read()
-    pages = RTTFClient().get_list_of_tournaments(
+    pages = RTTFClient().get_tournaments_pages(
         date_range=DateRange(
             datetime.date.today(), datetime.date.today() + datetime.timedelta(days=1)
         ),
