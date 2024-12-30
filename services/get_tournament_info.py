@@ -27,8 +27,10 @@ class TournamentService:
     def get_tournament_info(
         self,
         friend_ids: set[int],
-        date_range: DateRange = DateRange(),
+        date_range: DateRange | None = None,
     ) -> dict[int, list[Tournament]]:
+        if date_range is None:
+            date_range = DateRange()
         logger.info(
             f"Command get_tournament_info called with DateRange: "
             f"date_from={date_range.date_from}, date_to={date_range.date_to}"

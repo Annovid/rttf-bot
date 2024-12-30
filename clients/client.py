@@ -4,6 +4,7 @@ from multiprocessing.pool import ThreadPool
 from typing import Any
 
 import requests
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
 from utils.models import DateRange
 from utils.settings import settings
@@ -22,6 +23,11 @@ class RTTFClient:
     }
 
     @classmethod
+    @retry(
+        stop=stop_after_attempt(3),  # Остановиться после 3 попыток
+        wait=wait_fixed(2),  # Ждать 2 секунды между попытками
+        retry=retry_if_exception_type(requests.RequestException),  # Повторять только при ошибках requests
+    )
     def make_request(
         cls,
         url: str,
@@ -32,8 +38,10 @@ class RTTFClient:
         try:
             response = requests.get(url=url, headers=headers)
             response.raise_for_status()
+            logger.debug('Successful request to %s', url)
             return response
         except requests.RequestException as e:
+            logger.warning('Failed request to %s', url)
             raise RuntimeError(f'Error during request: {e}')
 
     @classmethod
@@ -97,17 +105,20 @@ class RTTFClient:
     @classmethod
     def get_list_of_tournaments(
         cls,
-        date_range: DateRange = DateRange,
+        date_range: DateRange | None = None,
     ) -> list[str]:
-        date_range = [
-            date_range.date_from + datetime.timedelta(days=n)
-            for n in range((date_range.date_to - date_range.date_from).days + 1)
+        if date_range is None:
+            date_range = DateRange()
+        dates = [
+            date_range.date_from + datetime.timedelta(days=i)
+            for i in range((date_range.date_to - date_range.date_from).days + 1)
         ]
         with ThreadPool(settings.MAX_WORKERS) as pool:
-            pages = pool.map(cls.get_tournaments_for_date, date_range)
-        for date, result in zip(date_range, pages):
-            logger.info(f'Downloaded tournaments for {date}')
-        return [page for date, page in zip(date_range, pages)]
+            pages = pool.map(cls.get_tournaments_for_date, dates)
+        date_page_mapping = zip(dates, pages)
+        for date, result in date_page_mapping:
+            logger.info(f'Downloaded list of tournaments for date: {date}')
+        return [page for date, page in date_page_mapping]
 
     @classmethod
     def get_tournament(
