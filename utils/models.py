@@ -70,9 +70,14 @@ class DateRange:
             date_to if date_to else self.date_from + datetime.timedelta(days=1)
         )
 
-    def from_ints(self, days_from: int = 0, days_to: int = 0):
-        self.date_from = datetime.date.today() + datetime.timedelta(days=days_from)
-        self.date_to = datetime.date.today() + datetime.timedelta(days=days_to)
+    @classmethod
+    def from_ints(cls, days_from: int = 0, days_to: int = 0):
+        date_from = datetime.date.today() + datetime.timedelta(days=days_from)
+        date_to = datetime.date.today() + datetime.timedelta(days=days_to)
+        return DateRange(
+            date_from=date_from,
+            date_to=date_to,
+        )
 
 
 @dataclass
