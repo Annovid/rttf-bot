@@ -18,5 +18,5 @@ services:
       - TOKEN=${TOKEN}
       - DB_URL=${DB_URL}
     restart: always
-#    depends_on:
-#      - rttf_bot_db
+    depends_on:
+      - rttf_bot_db

@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 from utils.models import UserConfig
 from utils.settings import settings
 
+from datetime import date
+
+
 engine = sa.create_engine(settings.DB_URL)
 
 Base = declarative_base()
@@ -44,3 +47,45 @@ class DBUserConfig(Base):
             session.add(db_user_config)
 
         session.commit()
+
+
+class Player(Base):
+    __tablename__ = 'players'
+
+    player_id: int = sa.Column(sa.Integer, primary_key=True)
+    name: str = sa.Column(sa.String, default='')
+
+
+class Tourment(Base):
+    __tablename__ = 'tournaments'
+
+    tournament_id: int = sa.Column(sa.Integer, primary_key=True)
+    tournment_date: date = sa.Column(sa.Date)
+    tournament_info_json: str = sa.Column(sa.String, nullable=True)
+    # Когда наступает next_update_dtm турнир подхватывается кроном
+    # обрабатывающим обновление статусов игр
+    # NULL означает, что апдейты по этому турниру больше не нужны
+    next_update_dtm: int = sa.Column(sa.Integer, nullable=True)
+    
+
+class Subscription(Base):
+    __tablename__ = 'subscriptions'
+
+    user_id: int = sa.Column(
+        sa.Integer, sa.ForeignKey('user_configs.id'), primary_key=True
+    )
+    player_id: int = sa.Column(
+        sa.Integer, sa.ForeignKey('players.player_id'), primary_key=True
+    )
+
+
+class PlayerTournament(Base):
+    __tablename__ = 'player_tournament'
+
+    player_id: int = sa.Column(
+        sa.Integer, sa.ForeignKey('players.player_id'), primary_key=True
+    )
+    tournament_id: int = sa.Column(
+        sa.Integer, sa.ForeignKey('tournaments.tournament_id'), primary_key=True
+    )
+    results_json: str = sa.Column(sa.String)

@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -17,7 +18,7 @@ target_metadata = Base.metadata
 
 
 def get_db_url():
-    return settings.DB_URL
+    return os.getenv("DB_URL") or settings.DB_URL
 
 
 def process_revision_directives(context, revision, directives):
@@ -45,7 +46,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    connectable = create_engine(get_db_url())
+    connectable = config.attributes.get('connection', create_engine(get_db_url()))
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
