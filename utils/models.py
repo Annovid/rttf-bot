@@ -137,13 +137,28 @@ class Player:
         # Join non-empty strings with new lines
         return '\n'.join(filter(bool, md_representation))
 
+@dataclass
+class PlayerResult:
+    player_id: int
+    name: str
+    rating_before: float
+    rating_delta: float
+    games_won: int
+    games_lost: int
+
+    def to_md_one_str(self) -> str:
+        return (
+            f'[{self.player_id}](https://m.rttf.ru/players/{self.player_id}): *{self.name}*'
+            f' rating:{self.rating_before:.0f} delta:{self.rating_delta} won:{self.games_won} lost:{self.games_lost}')
 
 @dataclass
 class Tournament:
     id: int
     name: str
+    is_completed: bool
     registered_players: list[Player]
     refused_players: list[Player]
+    player_results: list[PlayerResult]
 
     def __post_init__(self):
         if not isinstance(self.id, int):
@@ -168,3 +183,13 @@ class Tournament:
 
     def to_md_one_str(self) -> str:
         return f'[{self.id}](https://m.rttf.ru/tournaments/{self.id}): *{self.name}*'
+
+    def to_md_player_results(self) -> str:
+        res = self.to_md_one_str()
+        if not self.player_results: 
+            return res
+        res += '\n'
+        def pr_to_str(pr: PlayerResult):
+            return f"{pr:id}"
+        res += '\n'.join([pr.to_md_one_str() for pr in self.player_results])
+        return res
