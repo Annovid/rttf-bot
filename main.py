@@ -6,19 +6,7 @@ from utils.custom_logger import logger
 from clients.client import RTTFClient
 from parsers.tournaments_parser import TournamentsParser
 from utils.models import DateRange
-
-
-def parse_tournaments():
-    pages = RTTFClient().get_tournaments_pages(
-        date_range=DateRange(
-            datetime.date.today() - datetime.timedelta(days=2),
-            datetime.date.today() + datetime.timedelta(days=3)
-        ),
-    )
-    tournaments_data = []
-    for page in pages:
-        tournaments_data.extend(TournamentsParser.parse_data(page))
-    print('\n'.join(map(str, tournaments_data)))
+from services.player_service import PlayerService
 
 
 def main():
@@ -27,7 +15,9 @@ def main():
     args = parser.parse_args()
 
     if args.parse_tournaments:
-        parse_tournaments()
+        player_service = PlayerService()
+        tournaments_data = player_service.update_tournaments()
+        print('\n'.join(map(str, tournaments_data)))
     else:
         logger.info('Bot started')
         bot_context.bot.infinity_polling(

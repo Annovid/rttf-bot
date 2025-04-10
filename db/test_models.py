@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from alembic import command
 from alembic.config import Config
-from db.models import Base, DBUserConfig, Player, Tourment, Subscription, PlayerTournament
+from db.models import Base, DBUserConfig, Player, Tournament, Subscription, PlayerTournament
 from utils.models import UserConfig
 
 from utils.settings import settings
@@ -39,49 +39,49 @@ def test_db_user_config(test_db):
     assert retrieved_config.config == user_config.to_dict()
 
 def test_player_model(test_db):
-    player = Player(player_id=1, name="Test Player")
+    player = Player(id=1, name="Test Player")
     test_db.add(player)
     test_db.commit()
     
-    retrieved_player = test_db.query(Player).filter_by(player_id=1).first()
+    retrieved_player = test_db.query(Player).filter_by(id=1).first()
     assert retrieved_player is not None
     assert retrieved_player.name == "Test Player"
 
 def test_tournament_model(test_db):
-    tournament = Tourment(tournament_id=1, tournment_date=date(2023, 10, 26), tournament_info_json='{}')
+    tournament = Tournament(id=1, tournament_date=date(2023, 10, 26), info_json='{}')
     test_db.add(tournament)
     test_db.commit()
     
-    retrieved_tournament = test_db.query(Tourment).filter_by(tournament_id=1).first()
+    retrieved_tournament = test_db.query(Tournament).filter_by(id=1).first()
     assert retrieved_tournament is not None
-    assert retrieved_tournament.tournment_date == date(2023, 10, 26)
+    assert retrieved_tournament.tournament_date == date(2023, 10, 26)
 
 def test_subscription_model(test_db):
     user_config = UserConfig(id=2, username="123")
     db_user_config = DBUserConfig(id=user_config.id, config=user_config.to_dict())
     db_user_config.save_config(user_config, test_db)
 
-    player = Player(player_id=2, name="Test Player")
+    player = Player(id=2, name="Test Player")
     test_db.add(player)
     test_db.commit()
 
-    subscription = Subscription(user_id=user_config.id, player_id=player.player_id)
+    subscription = Subscription(user_id=user_config.id, player_id=player.id)
     test_db.add(subscription)
     test_db.commit()
 
-    retrieved_subscription = test_db.query(Subscription).filter_by(user_id=user_config.id, player_id=player.player_id).first()
+    retrieved_subscription = test_db.query(Subscription).filter_by(user_id=user_config.id, player_id=player.id).first()
     assert retrieved_subscription is not None
 
 def test_player_tournament_model(test_db):
-    player = Player(player_id=3, name="Test Player")
-    tournament = Tourment(tournament_id=2, tournment_date=date(2023, 10, 26), tournament_info_json='{}')
+    player = Player(id=3, name="Test Player")
+    tournament = Tournament(id=2, tournament_date=date(2023, 10, 26), info_json='{}')
     test_db.add(player)
     test_db.add(tournament)
     test_db.commit()
 
-    player_tournament = PlayerTournament(player_id=player.player_id, tournament_id=tournament.tournament_id, results_json='{}')
+    player_tournament = PlayerTournament(player_id=player.id, tournament_id=tournament.id, results_json='{}')
     test_db.add(player_tournament)
     test_db.commit()
 
-    retrieved_player_tournament = test_db.query(PlayerTournament).filter_by(player_id=player.player_id, tournament_id=tournament.tournament_id).first()
+    retrieved_player_tournament = test_db.query(PlayerTournament).filter_by(player_id=player.id, tournament_id=tournament.id).first()
     assert retrieved_player_tournament is not None

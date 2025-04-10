@@ -1,7 +1,7 @@
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '0002'
@@ -14,16 +14,16 @@ def upgrade() -> None:
     # Create players table
     op.create_table(
         'players',
-        sa.Column('player_id', sa.Integer, primary_key=True),
-        sa.Column('name', sa.String, default=""),
+        sa.Column('id', sa.Integer, primary_key=True, autoincrement=False),
+        sa.Column('name', sa.String, default=''),
     )
 
     # Create tournaments table
     op.create_table(
         'tournaments',
-        sa.Column('tournament_id', sa.Integer, primary_key=True),
-        sa.Column('tournment_date', sa.Date, nullable=False),
-        sa.Column('tournament_info_json', sa.String, nullable=True),
+        sa.Column('id', sa.Integer, primary_key=True, autoincrement=False),
+        sa.Column('tournament_date', sa.Date, nullable=False),
+        sa.Column('info_json', sa.String, nullable=True),
         sa.Column('next_update_dtm', sa.Integer, nullable=True),
     )
 
@@ -31,18 +31,34 @@ def upgrade() -> None:
     op.create_table(
         'subscriptions',
         sa.Column(
-            'user_id', sa.Integer, sa.ForeignKey('user_configs.id'), primary_key=True
+            'user_id',
+            sa.Integer,
+            sa.ForeignKey('user_configs.id'),
+            primary_key=True,
         ),
         sa.Column(
-            'player_id', sa.Integer, sa.ForeignKey('players.player_id'), primary_key=True
+            'player_id',
+            sa.Integer,
+            sa.ForeignKey('players.id'),
+            primary_key=True,
         ),
     )
 
     # Create player_tournament table
     op.create_table(
         'player_tournament',
-        sa.Column('player_id', sa.Integer, sa.ForeignKey('players.player_id'), primary_key=True),
-        sa.Column('tournament_id', sa.Integer, sa.ForeignKey('tournaments.tournament_id'), primary_key=True),
+        sa.Column(
+            'player_id',
+            sa.Integer,
+            sa.ForeignKey('players.id'),
+            primary_key=True,
+        ),
+        sa.Column(
+            'tournament_id',
+            sa.Integer,
+            sa.ForeignKey('tournaments.id'),
+            primary_key=True,
+        ),
         sa.Column('results_json', sa.String, nullable=True),
     )
 

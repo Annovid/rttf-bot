@@ -52,16 +52,16 @@ class DBUserConfig(Base):
 class Player(Base):
     __tablename__ = 'players'
 
-    player_id: int = sa.Column(sa.Integer, primary_key=True)
+    id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=False)
     name: str = sa.Column(sa.String, default='')
 
 
-class Tourment(Base):
+class Tournament(Base):
     __tablename__ = 'tournaments'
 
-    tournament_id: int = sa.Column(sa.Integer, primary_key=True)
-    tournment_date: date = sa.Column(sa.Date)
-    tournament_info_json: str = sa.Column(sa.String, nullable=True)
+    id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=False)
+    tournament_date: date = sa.Column(sa.Date)
+    info_json: str = sa.Column(sa.String, nullable=True)
     # Когда наступает next_update_dtm турнир подхватывается кроном
     # обрабатывающим обновление статусов игр
     # NULL означает, что апдейты по этому турниру больше не нужны
@@ -75,7 +75,7 @@ class Subscription(Base):
         sa.Integer, sa.ForeignKey('user_configs.id'), primary_key=True
     )
     player_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('players.player_id'), primary_key=True
+        sa.Integer, sa.ForeignKey('players.id'), primary_key=True
     )
 
 
@@ -83,9 +83,9 @@ class PlayerTournament(Base):
     __tablename__ = 'player_tournament'
 
     player_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('players.player_id'), primary_key=True
+        sa.Integer, sa.ForeignKey('players.id'), primary_key=True
     )
     tournament_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('tournaments.tournament_id'), primary_key=True
+        sa.Integer, sa.ForeignKey('tournaments.id'), primary_key=True
     )
     results_json: str = sa.Column(sa.String)
