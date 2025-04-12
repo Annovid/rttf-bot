@@ -144,6 +144,7 @@ class PlayerResult:
     name: str
     rating_before: float
     rating_delta: float
+    rating_after: float
     games_won: int
     games_lost: int
 
@@ -156,10 +157,10 @@ class PlayerResult:
 class Tournament:
     id: int
     name: str
-    is_completed: bool
-    registered_players: list[Player]
-    refused_players: list[Player]
-    player_results: list[PlayerResult]
+    is_completed: bool = False
+    registered_players: list[Player] = field(default_factory=list)
+    refused_players: list[Player] = field(default_factory=list)
+    player_results: list[PlayerResult] = field(default_factory=list)
 
     def __post_init__(self):
         if not isinstance(self.id, int):
@@ -199,9 +200,13 @@ class Tournament:
 @dataclass
 class PlayerTournamentInfo:
     player_id: int
+    tournament_id: int
     status: str
-    rating_before: str = ""
-    rating_delta: str = ""
+    player_name: str = ""
+    tournament_name: str = ""
+    rating_before: float = ""
+    rating_delta: float = ""
+    rating_after: float = ""
     games_won: int = 0
     games_lost: int = 0
 

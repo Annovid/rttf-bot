@@ -1,14 +1,17 @@
 import datetime
 import json
 from collections import defaultdict
+from typing import Optional
 
+from bot.bot_context import bot_context
+from bot.notifications import send_player_update
 from clients.client import RTTFClient
 from db.models import PlayerTournament, Subscription, Tournament
 from db.session_factory import open_session
 from parsers.tournament_parser import TournamentParser
 from parsers.tournaments_parser import TournamentParseResult, TournamentsParser
 from utils.custom_logger import logger
-from utils.models import DateRange, PlayerTournamentInfo
+from utils.models import DateRange, PlayerTournamentInfo, Tournament as TournamentParse
 
 
 class PlayerService:
@@ -16,42 +19,49 @@ class PlayerService:
     Нужен, чтобы следить за активностью игроков
 
     Выполняет два основных сценария
-    
+
     - Обновление списка существующих турниров
     - Обновление данных по игрокам по конкретному турниру
     """
 
-    # Уносим парсинг в отдельные функции, чтобы переопределять в тестах
+    # Уносим парсинг и нотификации в отдельные методы, чтобы переопределять в тестах
     def _get_tournaments_pages(self):
         pages = RTTFClient().get_tournaments_pages(
             date_range=DateRange(
                 datetime.date.today() - datetime.timedelta(days=2),
-                datetime.date.today() + datetime.timedelta(days=3)
+                datetime.date.today() + datetime.timedelta(days=3),
             ),
         )
         return pages
-    
+
     def _get_tournament_page(self, tournament_id):
         page = RTTFClient().get_tournament(tournament_id)
         return page
+
+    def _send_player_update(self, user_id, info):
+        send_player_update(user_id, info, bot_context=bot_context)
 
     def update_tournaments(self):
         pages = self._get_tournaments_pages()
         tournaments_data: list[TournamentParseResult] = []
         for page in pages:
             tournaments_data.extend(TournamentsParser.parse_data(page))
-            
+
         added_list: list[TournamentParseResult] = []
         with open_session() as session:
             for tournament_parse in tournaments_data:
-                existing = session.query(Tournament).filter_by(id=tournament_parse.id).first()
+                existing = (
+                    session.query(Tournament).filter_by(id=tournament_parse.id).first()
+                )
                 if not existing:
                     # inserting new tournament record
                     tournament_info = {
                         'name': tournament_parse.name,
                         'rating': tournament_parse.rating,
                     }
-                    dt = datetime.datetime.strptime(tournament_parse.datetime, "%Y-%m-%d %H:%M")
+                    dt = datetime.datetime.strptime(
+                        tournament_parse.datetime, '%Y-%m-%d %H:%M'
+                    )
                     tournament_date = dt.date()
                     tournament_record = Tournament(
                         id=tournament_parse.id,
@@ -67,8 +77,8 @@ class PlayerService:
         for added in added_list:
             logger.info(f'Added tournament {str(added)}')
         return added_list
-    
-    def get_subscriptions_dict(self) -> dict[int, list[int]]:
+
+    def _get_subscriptions_dict(self) -> dict[int, list[int]]:
         """Возвращает словарь игроков и кто на них подписан
         Формат: player_id -> list[user_id]
         """
@@ -79,13 +89,13 @@ class PlayerService:
                 player_users[sub.player_id].append(sub.user_id)
         return dict(player_users)
 
-    def update_player_tournaments(self, players, tournament_id):
+    def _update_player_tournaments(self, players, tournament_id):
         """Обновляет таблицу участий игроков в турнирах
-        Возвращает словарь с апдейтами 
+        Возвращает словарь с апдейтами
         """
         page = self._get_tournament_page(tournament_id)
-        tournament_obj = TournamentParser._parse_data(page)
-        
+        tournament_obj: TournamentParse = TournamentParser.parse_data(page)
+
         players_dict = {}
 
         for player in tournament_obj.registered_players:
@@ -93,37 +103,51 @@ class PlayerService:
                 continue
             players_dict[player.id] = PlayerTournamentInfo(
                 player_id=player.id,
-                status="registered",
+                player_name=player.name,
+                tournament_id=tournament_id,
+                tournament_name=tournament_obj.name,
+                status='registered',
             )
         for player in tournament_obj.refused_players:
             if player.id not in players:
                 continue
             players_dict[player.id] = PlayerTournamentInfo(
                 player_id=player.id,
-                status="refused",
+                player_name=player.name,
+                tournament_id=tournament_id,
+                tournament_name=tournament_obj.name,
+                status='refused',
             )
         for result in tournament_obj.player_results:
             if result.player_id not in players:
                 continue
             players_dict[result.player_id] = PlayerTournamentInfo(
                 player_id=result.player_id,
-                status="completed",
+                player_name=result.name,
+                tournament_id=tournament_id,
+                tournament_name=tournament_obj.name,
+                status='completed',
                 rating_before=result.rating_before,
                 rating_delta=result.rating_delta,
+                rating_after=result.rating_after,
                 games_won=result.games_won,
                 games_lost=result.games_lost,
             )
-        
+
         updated = {}
         with open_session() as session:
             for player_id, info in players_dict.items():
-                existing = session.query(PlayerTournament).filter_by(tournament_id=tournament_id, player_id=player_id).first()
+                existing = (
+                    session.query(PlayerTournament)
+                    .filter_by(tournament_id=tournament_id, player_id=player_id)
+                    .first()
+                )
                 serialized = info.serialize()
                 if existing is None:
                     new_record = PlayerTournament(
                         player_id=player_id,
                         tournament_id=tournament_id,
-                        info_json=serialized
+                        info_json=serialized,
                     )
                     session.add(new_record)
                     updated[player_id] = info
@@ -131,5 +155,47 @@ class PlayerService:
                     existing.info_json = serialized
                     updated[player_id] = info
             session.commit()
-        
+
         return updated
+
+    def process_batch_and_notify(
+        self, batch_size: int, now: Optional[datetime.datetime] = None
+    ):
+        if now is None:
+            now = datetime.datetime.now()
+        with open_session() as session:
+            expired_tournaments: list[Tournament] = (
+                session.query(Tournament)
+                .filter(
+                    Tournament.next_update_dtm < now.timestamp()
+                )
+                .limit(batch_size)
+                .all()
+            )
+            if not expired_tournaments:
+                return
+
+            subscriptions = self._get_subscriptions_dict()
+            unique_players = set(subscriptions.keys())
+
+            for tournament in expired_tournaments:
+                updates = self._update_player_tournaments(unique_players, tournament.id)
+                # Главное - не поломаться в этот момент
+                # Если update отработает, а нотификации не отправятся, то мы их потеряем
+                # Можно сделать надежнее, но пока так
+                for player_id, info in updates.items():
+                    if player_id in subscriptions:
+                        for user_id in subscriptions[player_id]:
+                            self._send_player_update(user_id, info)
+
+                # Установка времени следующего апдейта турнира
+                if tournament.tournament_date < (
+                    now.date() - datetime.timedelta(days=3)
+                ):
+                    tournament.next_update_dtm = None
+                else:
+                    tournament.next_update_dtm = (
+                        now.timestamp() + 3600 * 4
+                    )
+                # Если батч упадет посередине, то отработавшая часть не перезапустится
+                session.commit()

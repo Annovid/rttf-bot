@@ -100,6 +100,7 @@ class TournamentParser(Parser):
                 player_id = int(player_link.split('/')[-1].split('?')[0])
                 rating_before = float(cells[2].text.strip())
                 rating_delta = float(cells[3].text.strip().replace('−', '-'))
+                rating_after = float(cells[4].text.strip())
                 games_str = cells[5].text.strip()
                 _, games_won, games_lost = list(map(int, re.findall(r'\d+', games_str)))
                 player_result = PlayerResult(
@@ -107,6 +108,7 @@ class TournamentParser(Parser):
                     name=name,
                     rating_before=rating_before,
                     rating_delta=rating_delta,
+                    rating_after=rating_after,
                     games_won=games_won,
                     games_lost=games_lost,
                 )

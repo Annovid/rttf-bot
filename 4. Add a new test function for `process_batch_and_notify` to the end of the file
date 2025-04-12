@@ -1,0 +1,19 @@
+def test_process_batch_and_notify(setup_db, capsys):
+    import datetime
+    # Set 'now' as 2025-01-02 00:00:00
+    now_ts = datetime.datetime(2025, 1, 2, 0, 0, 0).timestamp()
+    # Use CompletedTournamentPlayerService for testing notifications
+    service = CompletedTournamentPlayerService()
+    service.process_batch_and_notify(batch_size=2, now=now_ts)
+    captured = capsys.readouterr().out
+    assert "User 1 notified" in captured
+
+    # Check tournaments next_update_dtm values in the database
+    from db.session_factory import SessionLocal
+    with SessionLocal() as session:
+        t1 = session.query(Tournament).filter_by(id=168138).first()
+        t2 = session.query(Tournament).filter_by(id=168577).first()
+        # For tournament 168138, tournament_date is 2024-12-28, which is older than 3 days relative to 2025-01-02
+        assert t1.next_update_dtm is None
+        # For tournament 168577, next_update_dtm should be set to now_ts + 3600*4
+        assert t2.next_update_dtm == now_ts + 3600 * 4
