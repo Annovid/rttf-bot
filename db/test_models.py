@@ -79,7 +79,7 @@ def test_player_tournament_model(test_db):
     test_db.add(tournament)
     test_db.commit()
 
-    player_tournament = PlayerTournament(player_id=player.id, tournament_id=tournament.id, results_json='{}')
+    player_tournament = PlayerTournament(player_id=player.id, tournament_id=tournament.id, info_json='{}')
     test_db.add(player_tournament)
     test_db.commit()
 

@@ -59,7 +59,7 @@ def upgrade() -> None:
             sa.ForeignKey('tournaments.id'),
             primary_key=True,
         ),
-        sa.Column('results_json', sa.String, nullable=True),
+        sa.Column('info_json', sa.String, nullable=True),
     )
 
 

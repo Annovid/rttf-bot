@@ -1,12 +1,14 @@
 import datetime
 import json
+from collections import defaultdict
 
 from clients.client import RTTFClient
-from db.models import Tournament
+from db.models import PlayerTournament, Subscription, Tournament
 from db.session_factory import open_session
+from parsers.tournament_parser import TournamentParser
 from parsers.tournaments_parser import TournamentParseResult, TournamentsParser
 from utils.custom_logger import logger
-from utils.models import DateRange
+from utils.models import DateRange, PlayerTournamentInfo
 
 
 class PlayerService:
@@ -19,8 +21,8 @@ class PlayerService:
     - Обновление данных по игрокам по конкретному турниру
     """
 
-    # Уносим парсинг в отдельную функцию, чтобы переопределять в тестах
-    def _get_pages(self):
+    # Уносим парсинг в отдельные функции, чтобы переопределять в тестах
+    def _get_tournaments_pages(self):
         pages = RTTFClient().get_tournaments_pages(
             date_range=DateRange(
                 datetime.date.today() - datetime.timedelta(days=2),
@@ -28,9 +30,13 @@ class PlayerService:
             ),
         )
         return pages
+    
+    def _get_tournament_page(self, tournament_id):
+        page = RTTFClient().get_tournament(tournament_id)
+        return page
 
     def update_tournaments(self):
-        pages = self._get_pages()
+        pages = self._get_tournaments_pages()
         tournaments_data: list[TournamentParseResult] = []
         for page in pages:
             tournaments_data.extend(TournamentsParser.parse_data(page))
@@ -62,3 +68,68 @@ class PlayerService:
             logger.info(f'Added tournament {str(added)}')
         return added_list
     
+    def get_subscriptions_dict(self) -> dict[int, list[int]]:
+        """Возвращает словарь игроков и кто на них подписан
+        Формат: player_id -> list[user_id]
+        """
+        player_users = defaultdict(list)
+        with open_session() as session:
+            subscriptions = session.query(Subscription).all()
+            for sub in subscriptions:
+                player_users[sub.player_id].append(sub.user_id)
+        return dict(player_users)
+
+    def update_player_tournaments(self, players, tournament_id):
+        """Обновляет таблицу участий игроков в турнирах
+        Возвращает словарь с апдейтами 
+        """
+        page = self._get_tournament_page(tournament_id)
+        tournament_obj = TournamentParser._parse_data(page)
+        
+        players_dict = {}
+
+        for player in tournament_obj.registered_players:
+            if player.id not in players:
+                continue
+            players_dict[player.id] = PlayerTournamentInfo(
+                player_id=player.id,
+                status="registered",
+            )
+        for player in tournament_obj.refused_players:
+            if player.id not in players:
+                continue
+            players_dict[player.id] = PlayerTournamentInfo(
+                player_id=player.id,
+                status="refused",
+            )
+        for result in tournament_obj.player_results:
+            if result.player_id not in players:
+                continue
+            players_dict[result.player_id] = PlayerTournamentInfo(
+                player_id=result.player_id,
+                status="completed",
+                rating_before=result.rating_before,
+                rating_delta=result.rating_delta,
+                games_won=result.games_won,
+                games_lost=result.games_lost,
+            )
+        
+        updated = {}
+        with open_session() as session:
+            for player_id, info in players_dict.items():
+                existing = session.query(PlayerTournament).filter_by(tournament_id=tournament_id, player_id=player_id).first()
+                serialized = info.serialize()
+                if existing is None:
+                    new_record = PlayerTournament(
+                        player_id=player_id,
+                        tournament_id=tournament_id,
+                        info_json=serialized
+                    )
+                    session.add(new_record)
+                    updated[player_id] = info
+                elif existing.info_json != serialized:
+                    existing.info_json = serialized
+                    updated[player_id] = info
+            session.commit()
+        
+        return updated

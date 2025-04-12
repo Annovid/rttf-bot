@@ -88,4 +88,4 @@ class PlayerTournament(Base):
     tournament_id: int = sa.Column(
         sa.Integer, sa.ForeignKey('tournaments.id'), primary_key=True
     )
-    results_json: str = sa.Column(sa.String)
+    info_json: str = sa.Column(sa.String)

@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from utils.custom_logger import logger
+import json
 
 
 class StateMachine(enum.Enum):
@@ -193,3 +194,20 @@ class Tournament:
             return f"{pr:id}"
         res += '\n'.join([pr.to_md_one_str() for pr in self.player_results])
         return res
+
+
+@dataclass
+class PlayerTournamentInfo:
+    player_id: int
+    status: str
+    rating_before: str = ""
+    rating_delta: str = ""
+    games_won: int = 0
+    games_lost: int = 0
+
+    def serialize(self) -> str:
+        return json.dumps(self.__dict__, sort_keys=True)
+
+    @classmethod
+    def deserialize(cls, data: str) -> "PlayerTournamentInfo":
+        return cls(**json.loads(data))
