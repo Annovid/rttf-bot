@@ -1,5 +1,22 @@
 # rttf-bot
 
+## Установка зависимостей
+
+```shell
+python 3.12 -m venv venv
+source venv/bin/activate
+pip install poetry==1.8.4
+poetry install
+```
+
+### Миграции
+
+```shell
+cd src
+export POSTGRES_CONNECTION_STRING=postgresql://pguser:pgpass@localhost/rttf_bot
+alembic upgrade head
+```
+
 ## Приоритизация задач
 ### TODO:
 ###### Важное и срочное (Делай сейчас):
