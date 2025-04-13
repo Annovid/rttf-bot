@@ -97,6 +97,9 @@ class DBSubscription(Base):
             # subscription_on переключился с True на False - удалить все подписки для этого пользователя
             session.query(cls).filter_by(user_id=user_id).delete()
             return
+        
+        if not new_config.subscription_on:
+            return
 
         # Если статус subscription_on не изменился, обрабатываем разницу между списками друзей:
         added_ids = new_config.friend_ids - old_config.friend_ids
