@@ -2,6 +2,6 @@ __pycache__/
 
 .idea
 logs
-resources/.env
+resources
 venv
 .env

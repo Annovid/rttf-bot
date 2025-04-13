@@ -11,7 +11,6 @@ class StateMachine(enum.Enum):
     ADD_FRIEND = 'add_friend_state'
     DELETE_FRIEND = 'delete_friend_state'
     CHANGE_CONFIG_MODE = 'change_config_mode'
-    ADMIN = 'admin_state'
 
     def to_dict(self):
         """Сериализация ENUM в словарь."""
@@ -28,8 +27,8 @@ class UserConfig:
     id: int
     state: StateMachine = StateMachine.MAIN
     friend_ids: set[int] = field(default_factory=set)
-    username: str | None = ""
-    full_name: str | None = ""
+    username: str | None = ''
+    full_name: str | None = ''
 
     def to_dict(self) -> dict[str, Any]:
         """Конвертирует объект в словарь."""
@@ -64,7 +63,7 @@ class DateRange:
         date_to: datetime.date | None = None,
     ):
         date_today = datetime.date.today()
-        logger.info(f"Current date (today): {date_today}")
+        logger.info(f'Current date (today): {date_today}')
         self.date_from = date_from if date_from is not None else date_today
         self.date_to = (
             date_to if date_to else self.date_from + datetime.timedelta(days=1)

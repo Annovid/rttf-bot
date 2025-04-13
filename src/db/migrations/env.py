@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -6,7 +7,6 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine
 
 from db.models import Base
-from utils.settings import settings
 
 config: Config = context.config
 
@@ -17,7 +17,12 @@ target_metadata = Base.metadata
 
 
 def get_db_url():
-    return settings.DB_URL
+    db_url = os.getenv('POSTGRES_CONNECTION_STRING')
+    if not db_url:
+        raise EnvironmentError(
+            'Environment variable POSTGRES_CONNECTION_STRING is not set'
+        )
+    return db_url
 
 
 def process_revision_directives(context, revision, directives):

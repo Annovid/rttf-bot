@@ -32,8 +32,8 @@ class TournamentService:
         if date_range is None:
             date_range = DateRange()
         logger.info(
-            f"Command get_tournament_info called with DateRange: "
-            f"date_from={date_range.date_from}, date_to={date_range.date_to}"
+            f'Command get_tournament_info called with DateRange: '
+            f'date_from={date_range.date_from}, date_to={date_range.date_to}'
         )
         matching: dict[int, list[Tournament]] = defaultdict(list)
         tournaments_pages = RTTFClient.get_tournaments_pages(date_range=date_range)

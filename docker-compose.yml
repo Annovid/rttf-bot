@@ -1,17 +1,17 @@
 version: '3'
 
 services:
-  rttf_bot_db:
-    image: postgres:13-alpine
-    container_name: rttf_bot_db
-    environment:
-      POSTGRES_DB: rttf_bot
-      POSTGRES_USER: pguser
-      POSTGRES_PASSWORD: pgpass
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./resources/volumes:/var/lib/postgresql
+#  rttf_bot_db:
+#    image: postgres:13-alpine
+#    container_name: rttf_bot_db
+#    environment:
+#      POSTGRES_DB: rttf_bot
+#      POSTGRES_USER: pguser
+#      POSTGRES_PASSWORD: pgpass
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - ./resources/volumes:/var/lib/postgresql
   rttf_bot_app:
     build: .
     environment:
