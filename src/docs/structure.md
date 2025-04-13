@@ -12,7 +12,6 @@ project/
 │   │   ├── general.py         # Общие команды (start, help, back)
 │   │   ├── friends.py         # Команды управления друзьями (add_friend, delete_friend)
 │   │   ├── tournaments.py     # Команды связанные с турнирами
-│   │   ├── admin.py           # Административные команды
 │   │   ├── fallback.py        # Обработчики для сообщений без команд
 │   └── bot_setup.py           # Настройка бота (bot_context, регистрация хендлеров)
 ├── services/
@@ -53,7 +52,7 @@ if __name__ == '__main__':
 ```python
 from telegram import Bot
 from telegram.ext import Dispatcher
-from bot.handlers import general, friends, tournaments, admin, fallback
+from bot.handlers import general, friends, tournaments, fallback
 from utils.settings import settings
 from bot.bot_context import BotContext
 
@@ -65,7 +64,6 @@ bot_context = BotContext(bot)
 general.register_handlers(bot_context)
 friends.register_handlers(bot_context)
 tournaments.register_handlers(bot_context)
-admin.register_handlers(bot_context)
 fallback.register_handlers(bot_context)
 ```
 
@@ -146,29 +144,6 @@ def register_handlers(bot_context: BotContext):
     @bot.message_handler(commands=['get_tournaments_info'])
     def get_tournaments_info(message: Message):
         # Логика получения информации о турнирах
-        pass
-```
-
----
-
-### **`bot/handlers/admin.py`**
-Административные команды.
-
-```python
-from telegram import Message
-from bot.bot_context import BotContext
-
-def register_handlers(bot_context: BotContext):
-    bot = bot_context.bot
-
-    @bot.message_handler(commands=['load_user_config_matching'])
-    def load_user_config_matching(message: Message):
-        # Логика для админов
-        pass
-
-    @bot.message_handler(commands=['get_user_ids', 'get_user_config'])
-    def admin_commands(message: Message):
-        # Обработка других админ-команд
         pass
 ```
 

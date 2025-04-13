@@ -13,26 +13,26 @@ def fetch_and_parse_players(search_str: str) -> list[Player]:
     Метод для получения и парсинга данных игроков.
     Логирует процесс запроса, получения и выдачи данных.
     """
-    logger.info(f"Requested players for search string: {search_str}")
+    logger.info(f'Requested players for search string: {search_str}')
     # Получение данных для исходного поискового запроса
     players_page = RTTFClient.get_players(search_str)
-    logger.info(f"Received players page for search string: {search_str}")
+    logger.info(f'Received players page for search string: {search_str}')
     # Парсинг данных
     players = PlayersParser().parse_data(players_page)
-    logger.info(f"Parsed players for search string: {search_str}")
+    logger.info(f'Parsed players for search string: {search_str}')
 
     # Если поисковый запрос содержит два слова, выполняем поиск с обратным порядком слов
     if len(search_str.split(' ')) == 2:
         search_str_new = ' '.join(search_str.split(' ')[::-1])
-        logger.info(f"Requested players for reversed search string: {search_str_new}")
+        logger.info(f'Requested players for reversed search string: {search_str_new}')
         players_page_new = RTTFClient.get_players(search_str_new)
         players_new = PlayersParser().parse_data(players_page_new)
-        logger.info(f"Parsed players for reversed search string: {search_str_new}")
+        logger.info(f'Parsed players for reversed search string: {search_str_new}')
 
         # Объединяем результаты
         players = players_new[:6] + players[:6]
 
-    logger.info(f"Returned players for search string: {search_str}")
+    logger.info(f'Returned players for search string: {search_str}')
     return players
 
 
@@ -63,14 +63,14 @@ def answer(bot_context: BotContext, message: Message) -> StateMachine | None:
                 message,
                 f'У вас уже есть друг {player.to_md_one_str()}. '
                 f'Если хотите ещё раз попытаться добавить друга, введите /add\_friend. '  # noqa
-                f'Вы также можете узнать о возможных функциях с помощью метода /start'
+                f'Вы также можете узнать о возможных функциях с помощью метода /start',
             )
         else:
             bot_context.bot.reply_to(
                 message,
                 f'Друг {player.to_md_one_str()} успешно добавлен. '
                 f'Если хотите добавить ещё одного друга, введите /add\_friend. '  # noqa
-                f'Вы также можете узнать о возможных функциях с помощью метода /start'
+                f'Вы также можете узнать о возможных функциях с помощью метода /start',
             )
         return
     if search_str := get_valid_initials(message.text):
@@ -78,9 +78,9 @@ def answer(bot_context: BotContext, message: Message) -> StateMachine | None:
         if len(players) == 0:
             bot_context.bot.reply_to(
                 message,
-                f'К сожалению, никто не найден (\n'
-                f'Попробуйте ещё раз. '
-                f'Если больше не хотите добавлять друзей, введите /start',
+                'К сожалению, никто не найден (\n'
+                'Попробуйте ещё раз. '
+                'Если больше не хотите добавлять друзей, введите /start',
             )
             return
         ans_message = (

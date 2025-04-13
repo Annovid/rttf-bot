@@ -17,12 +17,13 @@ target_metadata = Base.metadata
 
 
 def get_db_url():
-    db_url = os.getenv("POSTGRES_CONNECTION_STRING")
+    db_url = os.getenv('POSTGRES_CONNECTION_STRING')
     if not db_url:
         raise EnvironmentError(
-            "Environment variable POSTGRES_CONNECTION_STRING is not set"
+            'Environment variable POSTGRES_CONNECTION_STRING is not set'
         )
     return db_url
+
 
 def process_revision_directives(context, revision, directives):
     migration_script = directives[0]

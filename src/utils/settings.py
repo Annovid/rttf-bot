@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     SENTRY_DSN: str | None = None
     DEBUG: bool = False
     TOKEN: str = ''
-    ADMIN_PASSWORD: str | None = None
     MAX_WORKERS: int = 5
 
     class Config:
