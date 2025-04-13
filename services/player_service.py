@@ -161,6 +161,7 @@ class PlayerService:
     def process_batch_and_notify(
         self, batch_size: int, now: Optional[datetime.datetime] = None
     ):
+        all_updates = []
         if now is None:
             now = datetime.datetime.now()
         with open_session() as session:
@@ -173,7 +174,7 @@ class PlayerService:
                 .all()
             )
             if not expired_tournaments:
-                return
+                return all_updates
 
             subscriptions = self._get_subscriptions_dict()
             unique_players = set(subscriptions.keys())
@@ -199,3 +200,5 @@ class PlayerService:
                     )
                 # Если батч упадет посередине, то отработавшая часть не перезапустится
                 session.commit()
+                all_updates.extend(updates)
+        return all_updates

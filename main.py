@@ -21,8 +21,8 @@ def main():
         print('\n'.join(map(str, tournaments_data)))
     elif args.process_tournaments_batch:
         player_service = PlayerService()
-        result = player_service.process_batch_and_notify(batch_size=10)
-        print(result)
+        updates = player_service.process_batch_and_notify(batch_size=10)
+        print(updates)
     else:
         logger.info('Bot started')
         bot_context.bot.infinity_polling(
