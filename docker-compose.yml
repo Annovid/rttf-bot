@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./resources/volumes:/var/lib/postgresql
+      - ./resources/volumes/pg_data:/var/lib/postgresql/data
   rttf_bot_app:
     build: .
     environment:
@@ -20,3 +20,12 @@ services:
     restart: always
     depends_on:
       - rttf_bot_db
+  rttf_bot_cron:
+    build: .
+    environment:
+      - TOKEN=${TOKEN}
+      - DB_URL=${DB_URL}
+    restart: always
+    depends_on:
+      - rttf_bot_db
+    command: ["cron", "-f"]

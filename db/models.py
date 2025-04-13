@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from utils.models import UserConfig
 from utils.settings import settings
+from utils.custom_logger import logger
 
 from datetime import date
 
@@ -49,11 +50,6 @@ class DBUserConfig(Base):
         session.commit()
 
 
-class DBPlayer(Base):
-    __tablename__ = 'players'
-
-    id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=False)
-    name: str = sa.Column(sa.String, default='')
 
 
 class DBTournament(Base):
@@ -74,9 +70,7 @@ class DBSubscription(Base):
     user_id: int = sa.Column(
         sa.Integer, sa.ForeignKey('user_configs.id'), primary_key=True
     )
-    player_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('players.id'), primary_key=True
-    )
+    player_id: int = sa.Column(sa.Integer, primary_key=True)
 
     @classmethod
     def process_subs_diff(cls, session: Session, old_config: UserConfig, new_config: UserConfig):
@@ -91,7 +85,9 @@ class DBSubscription(Base):
             # subscription_on переключился с False на True - добавить ВСЕ друзей из new_config
             for friend_id in new_config.friend_ids:
                 sub = cls(user_id=user_id, player_id=friend_id)
-                session.add(sub)
+                if not session.query(cls).filter_by(user_id=user_id, player_id=friend_id).first():
+                    sub = cls(user_id=user_id, player_id=friend_id)
+                    session.add(sub)
             return
         elif old_config.subscription_on and not new_config.subscription_on:
             # subscription_on переключился с True на False - удалить все подписки для этого пользователя
@@ -104,8 +100,9 @@ class DBSubscription(Base):
         # Если статус subscription_on не изменился, обрабатываем разницу между списками друзей:
         added_ids = new_config.friend_ids - old_config.friend_ids
         for added_id in added_ids:
-            sub = cls(user_id=user_id, player_id=added_id)
-            session.add(sub)
+            if not session.query(cls).filter_by(user_id=user_id, player_id=added_id).first():
+                sub = cls(user_id=user_id, player_id=added_id)
+                session.add(sub)
         
         removed_ids = old_config.friend_ids - new_config.friend_ids
         for removed_id in removed_ids:
@@ -118,9 +115,7 @@ class DBSubscription(Base):
 class DBPlayerTournament(Base):
     __tablename__ = 'player_tournament'
 
-    player_id: int = sa.Column(
-        sa.Integer, sa.ForeignKey('players.id'), primary_key=True
-    )
+    player_id: int = sa.Column(sa.Integer, primary_key=True)
     tournament_id: int = sa.Column(
         sa.Integer, sa.ForeignKey('tournaments.id'), primary_key=True
     )

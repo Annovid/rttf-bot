@@ -5,7 +5,7 @@ import pytest
 import sqlalchemy as sa
 
 import utils.settings as settings_mod
-from db.models import Base, DBTournament, DBUserConfig, DBPlayer, DBSubscription
+from db.models import Base, DBTournament, DBUserConfig, DBSubscription
 from db.session_factory import SessionLocal
 from services.player_service import PlayerService
 from bot.notifications import send_player_update
@@ -48,12 +48,7 @@ def test_update_tournaments():
     with SessionLocal() as session:
         user_config = DBUserConfig(id=1, config={})
         session.add(user_config)
-        player1 = DBPlayer(id=124031, name='Dummy Player 124031')
-        player2 = DBPlayer(id=84962, name='Dummy Player 84962')
-        session.add_all([player1, player2])
-        sub1 = DBSubscription(user_id=1, player_id=124031)
-        sub2 = DBSubscription(user_id=1, player_id=84962)
-        session.add_all([sub1, sub2])
+        # DBPlayer removed; players now represented as ints, so no need to add players.
         session.commit()
 
     # База пустая, ожидаем, что все турниры попадут в базу
@@ -101,10 +96,7 @@ def test_update_player_tournaments():
     with SessionLocal() as session:
         user_config = DBUserConfig(id=1, config={})
         session.add(user_config)
-        player1 = DBPlayer(id=124031, name='Dummy Player 124031')
-        player2 = DBPlayer(id=84962, name='Dummy Player 84962')
-        player_3 = DBPlayer(id=107011, name='Dummy Player 107011')
-        session.add_all([player1, player2, player_3])
+        # DBPlayer removed; players now represented as ints, so no need to add players.
         session.commit()
 
     players = [124031, 84962, 107011]
@@ -133,9 +125,6 @@ def test_process_batch_and_notify():
     with SessionLocal() as session:
         user_config = DBUserConfig(id=1, config={})
         session.add(user_config)
-        player1 = DBPlayer(id=124031, name='Dummy Player 124031')
-        player2 = DBPlayer(id=84962, name='Dummy Player 84962')
-        session.add_all([player1, player2])
         sub1 = DBSubscription(user_id=1, player_id=124031)
         sub2 = DBSubscription(user_id=1, player_id=84962)
         session.add_all([sub1, sub2])

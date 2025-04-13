@@ -8,7 +8,6 @@ from sqlalchemy.orm import sessionmaker
 
 from db.models import (
     Base,
-    DBPlayer,
     DBPlayerTournament,
     DBSubscription,
     DBTournament,
@@ -46,14 +45,6 @@ def test_db_user_config(test_db):
     assert retrieved_config is not None
     assert retrieved_config.config == user_config.to_dict()
 
-def test_player_model(test_db):
-    player = DBPlayer(id=1, name="Test Player")
-    test_db.add(player)
-    test_db.commit()
-    
-    retrieved_player = test_db.query(DBPlayer).filter_by(id=1).first()
-    assert retrieved_player is not None
-    assert retrieved_player.name == "Test Player"
 
 def test_tournament_model(test_db):
     tournament = DBTournament(id=1, tournament_date=date(2023, 10, 26), info_json='{}')
@@ -69,29 +60,23 @@ def test_subscription_model(test_db):
     db_user_config = DBUserConfig(id=user_config.id, config=user_config.to_dict())
     db_user_config.save_config(user_config, test_db)
 
-    player = DBPlayer(id=2, name="Test Player")
-    test_db.add(player)
-    test_db.commit()
-
-    subscription = DBSubscription(user_id=user_config.id, player_id=player.id)
+    subscription = DBSubscription(user_id=user_config.id, player_id=2)
     test_db.add(subscription)
     test_db.commit()
 
-    retrieved_subscription = test_db.query(DBSubscription).filter_by(user_id=user_config.id, player_id=player.id).first()
+    retrieved_subscription = test_db.query(DBSubscription).filter_by(user_id=user_config.id, player_id=2).first()
     assert retrieved_subscription is not None
 
 def test_player_tournament_model(test_db):
-    player = DBPlayer(id=3, name="Test Player")
     tournament = DBTournament(id=2, tournament_date=date(2023, 10, 26), info_json='{}')
-    test_db.add(player)
     test_db.add(tournament)
     test_db.commit()
 
-    player_tournament = DBPlayerTournament(player_id=player.id, tournament_id=tournament.id, info_json='{}')
+    player_tournament = DBPlayerTournament(player_id=3, tournament_id=tournament.id, info_json='{}')
     test_db.add(player_tournament)
     test_db.commit()
 
-    retrieved_player_tournament = test_db.query(DBPlayerTournament).filter_by(player_id=player.id, tournament_id=tournament.id).first()
+    retrieved_player_tournament = test_db.query(DBPlayerTournament).filter_by(player_id=3, tournament_id=tournament.id).first()
     assert retrieved_player_tournament is not None
 
 def test_process_subs_diff_activate(test_db):

@@ -11,13 +11,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create players table
-    op.create_table(
-        'players',
-        sa.Column('id', sa.Integer, primary_key=True, autoincrement=False),
-        sa.Column('name', sa.String, default=''),
-    )
-
     # Create tournaments table
     op.create_table(
         'tournaments',
@@ -39,7 +32,6 @@ def upgrade() -> None:
         sa.Column(
             'player_id',
             sa.Integer,
-            sa.ForeignKey('players.id'),
             primary_key=True,
         ),
     )
@@ -50,7 +42,6 @@ def upgrade() -> None:
         sa.Column(
             'player_id',
             sa.Integer,
-            sa.ForeignKey('players.id'),
             primary_key=True,
         ),
         sa.Column(
@@ -72,6 +63,3 @@ def downgrade() -> None:
 
     # Drop tournaments table
     op.drop_table('tournaments')
-
-    # Drop players table
-    op.drop_table('players')

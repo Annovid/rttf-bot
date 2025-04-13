@@ -53,7 +53,7 @@ class UserConfig:
             friend_ids=set(user_config_dict['friend_ids']),
             username=user_config_dict.get('username', ''),
             full_name=user_config_dict.get('full_name', ''),
-            subscription_on=user_config_dict.get('substiption_on', False),
+            subscription_on=user_config_dict.get('subscription_on', False),
         )
 
 
