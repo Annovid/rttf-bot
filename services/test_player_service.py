@@ -5,7 +5,7 @@ import pytest
 import sqlalchemy as sa
 
 import utils.settings as settings_mod
-from db.models import Base, Tournament, DBUserConfig, Player, Subscription
+from db.models import Base, DBTournament, DBUserConfig, DBPlayer, DBSubscription
 from db.session_factory import SessionLocal
 from services.player_service import PlayerService
 from bot.notifications import send_player_update
@@ -46,13 +46,13 @@ def test_update_tournaments():
     Base.metadata.create_all(engine)
     SessionLocal.configure(bind=engine)
     with SessionLocal() as session:
-        user_config = DBUserConfig(id=1)
+        user_config = DBUserConfig(id=1, config={})
         session.add(user_config)
-        player1 = Player(id=124031, name='Dummy Player 124031')
-        player2 = Player(id=84962, name='Dummy Player 84962')
+        player1 = DBPlayer(id=124031, name='Dummy Player 124031')
+        player2 = DBPlayer(id=84962, name='Dummy Player 84962')
         session.add_all([player1, player2])
-        sub1 = Subscription(user_id=1, player_id=124031)
-        sub2 = Subscription(user_id=1, player_id=84962)
+        sub1 = DBSubscription(user_id=1, player_id=124031)
+        sub2 = DBSubscription(user_id=1, player_id=84962)
         session.add_all([sub1, sub2])
         session.commit()
 
@@ -60,14 +60,14 @@ def test_update_tournaments():
     service = PlayerServiceNotFull()
     service.update_tournaments()
     with SessionLocal() as session:
-        count = session.query(Tournament).count()
+        count = session.query(DBTournament).count()
     assert count == 48, f'Expected 48 tournaments after first update, got {count}'
 
     # В полном списке на 3 турнира больше. Ожидаем, что в базу попадут только они
     service = PlayerServiceFull()
     service.update_tournaments()
     with SessionLocal() as session:
-        count = session.query(Tournament).count()
+        count = session.query(DBTournament).count()
     assert count == 51, f'Expected 51 tournaments after second update, got {count}'
 
 
@@ -99,11 +99,11 @@ def test_update_player_tournaments():
     # Reconfigure SessionLocal to use the test engine
     SessionLocal.configure(bind=engine)
     with SessionLocal() as session:
-        user_config = DBUserConfig(id=1)
+        user_config = DBUserConfig(id=1, config={})
         session.add(user_config)
-        player1 = Player(id=124031, name='Dummy Player 124031')
-        player2 = Player(id=84962, name='Dummy Player 84962')
-        player_3 = Player(id=107011, name='Dummy Player 107011')
+        player1 = DBPlayer(id=124031, name='Dummy Player 124031')
+        player2 = DBPlayer(id=84962, name='Dummy Player 84962')
+        player_3 = DBPlayer(id=107011, name='Dummy Player 107011')
         session.add_all([player1, player2, player_3])
         session.commit()
 
@@ -131,21 +131,21 @@ def test_process_batch_and_notify():
     # Reconfigure SessionLocal to use the test engine
     SessionLocal.configure(bind=engine)
     with SessionLocal() as session:
-        user_config = DBUserConfig(id=1)
+        user_config = DBUserConfig(id=1, config={})
         session.add(user_config)
-        player1 = Player(id=124031, name='Dummy Player 124031')
-        player2 = Player(id=84962, name='Dummy Player 84962')
+        player1 = DBPlayer(id=124031, name='Dummy Player 124031')
+        player2 = DBPlayer(id=84962, name='Dummy Player 84962')
         session.add_all([player1, player2])
-        sub1 = Subscription(user_id=1, player_id=124031)
-        sub2 = Subscription(user_id=1, player_id=84962)
+        sub1 = DBSubscription(user_id=1, player_id=124031)
+        sub2 = DBSubscription(user_id=1, player_id=84962)
         session.add_all([sub1, sub2])
-        t1 = Tournament(
+        t1 = DBTournament(
             id=168138,
             tournament_date=datetime.date(2025, 4, 5),
             info_json='{}',
             next_update_dtm=datetime.datetime(2025, 4, 12, 22, 0, 0).timestamp(),
         )
-        t2 = Tournament(
+        t2 = DBTournament(
             id=168577,
             tournament_date=datetime.date(2025, 4, 13),
             info_json='{}',
@@ -160,7 +160,7 @@ def test_process_batch_and_notify():
     assert len(service.messages) == 3, f"Expected 3 messages for completed tournament, got {len(service.messages)}"
 
     with SessionLocal() as session:
-        tournament = session.query(Tournament).filter(Tournament.id == 168138).first()
+        tournament = session.query(DBTournament).filter(DBTournament.id == 168138).first()
         assert tournament.next_update_dtm is None
-        tournament = session.query(Tournament).filter(Tournament.id == 168577).first()
+        tournament = session.query(DBTournament).filter(DBTournament.id == 168577).first()
         assert (tournament.next_update_dtm - datetime.datetime(2025, 4, 13, 3, 0, 0).timestamp()) == 0

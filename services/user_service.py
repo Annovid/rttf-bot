@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 
-from db.models import DBUserConfig
+from db.models import DBUserConfig, DBSubscription
 from db.session_factory import open_session
 from utils.models import UserConfig
 
@@ -36,6 +36,10 @@ class UserService:
     def save_user_config(user_config: UserConfig) -> None:
         """Сохраняет конфигурацию пользователя в базу данных."""
         with open_session() as session:
+            existing = session.query(DBUserConfig).filter(DBUserConfig.id == user_config.id).first()
+            if existing:
+                old_config = UserConfig.from_dict(existing.config)
+                DBSubscription.process_subs_diff(session, old_config, user_config)
             db_user_config: DBUserConfig = DBUserConfig(
                 id=user_config.id, config=user_config.to_dict()
             )

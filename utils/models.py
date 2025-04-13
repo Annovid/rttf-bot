@@ -31,6 +31,7 @@ class UserConfig:
     friend_ids: set[int] = field(default_factory=set)
     username: str | None = ""
     full_name: str | None = ""
+    subscription_on: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Конвертирует объект в словарь."""
@@ -40,6 +41,7 @@ class UserConfig:
             'friend_ids': list(self.friend_ids),
             'username': self.username,
             'full_name': self.full_name,
+            'subscription_on': self.subscription_on
         }
 
     @classmethod
@@ -51,6 +53,7 @@ class UserConfig:
             friend_ids=set(user_config_dict['friend_ids']),
             username=user_config_dict.get('username', ''),
             full_name=user_config_dict.get('full_name', ''),
+            subscription_on=user_config_dict.get('substiption_on', False),
         )
 
 

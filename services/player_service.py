@@ -6,12 +6,12 @@ from typing import Optional
 from bot.bot_context import bot_context
 from bot.notifications import send_player_update
 from clients.client import RTTFClient
-from db.models import PlayerTournament, Subscription, Tournament
+from db.models import DBPlayerTournament, DBSubscription, DBTournament
 from db.session_factory import open_session
 from parsers.tournament_parser import TournamentParser
 from parsers.tournaments_parser import TournamentParseResult, TournamentsParser
 from utils.custom_logger import logger
-from utils.models import DateRange, PlayerTournamentInfo, Tournament as TournamentParse
+from utils.models import DateRange, PlayerTournamentInfo, Tournament
 
 
 class PlayerService:
@@ -51,7 +51,7 @@ class PlayerService:
         with open_session() as session:
             for tournament_parse in tournaments_data:
                 existing = (
-                    session.query(Tournament).filter_by(id=tournament_parse.id).first()
+                    session.query(DBTournament).filter_by(id=tournament_parse.id).first()
                 )
                 if not existing:
                     # inserting new tournament record
@@ -63,7 +63,7 @@ class PlayerService:
                         tournament_parse.datetime, '%Y-%m-%d %H:%M'
                     )
                     tournament_date = dt.date()
-                    tournament_record = Tournament(
+                    tournament_record = DBTournament(
                         id=tournament_parse.id,
                         tournament_date=tournament_date,
                         info_json=json.dumps(tournament_info),
@@ -84,7 +84,7 @@ class PlayerService:
         """
         player_users = defaultdict(list)
         with open_session() as session:
-            subscriptions = session.query(Subscription).all()
+            subscriptions = session.query(DBSubscription).all()
             for sub in subscriptions:
                 player_users[sub.player_id].append(sub.user_id)
         return dict(player_users)
@@ -94,7 +94,7 @@ class PlayerService:
         Возвращает словарь с апдейтами
         """
         page = self._get_tournament_page(tournament_id)
-        tournament_obj: TournamentParse = TournamentParser.parse_data(page)
+        tournament_obj: Tournament = TournamentParser.parse_data(page)
 
         players_dict = {}
 
@@ -138,13 +138,13 @@ class PlayerService:
         with open_session() as session:
             for player_id, info in players_dict.items():
                 existing = (
-                    session.query(PlayerTournament)
+                    session.query(DBPlayerTournament)
                     .filter_by(tournament_id=tournament_id, player_id=player_id)
                     .first()
                 )
                 serialized = info.serialize()
                 if existing is None:
-                    new_record = PlayerTournament(
+                    new_record = DBPlayerTournament(
                         player_id=player_id,
                         tournament_id=tournament_id,
                         info_json=serialized,
@@ -165,10 +165,10 @@ class PlayerService:
         if now is None:
             now = datetime.datetime.now()
         with open_session() as session:
-            expired_tournaments: list[Tournament] = (
-                session.query(Tournament)
+            expired_tournaments: list[DBTournament] = (
+                session.query(DBTournament)
                 .filter(
-                    Tournament.next_update_dtm < now.timestamp()
+                    DBTournament.next_update_dtm < now.timestamp()
                 )
                 .limit(batch_size)
                 .all()

@@ -17,7 +17,7 @@ class DBUserConfig(Base):
     __tablename__ = 'user_configs'
 
     id: int = sa.Column(sa.Integer, primary_key=True)
-    config: dict = sa.Column(sa.JSON)
+    config: dict = sa.Column(sa.JSON, nullable=False)
 
     @classmethod
     def get_all(cls, session: Session) -> list[UserConfig]:
@@ -49,18 +49,18 @@ class DBUserConfig(Base):
         session.commit()
 
 
-class Player(Base):
+class DBPlayer(Base):
     __tablename__ = 'players'
 
     id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=False)
     name: str = sa.Column(sa.String, default='')
 
 
-class Tournament(Base):
+class DBTournament(Base):
     __tablename__ = 'tournaments'
 
     id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=False)
-    tournament_date: date = sa.Column(sa.Date)
+    tournament_date: date = sa.Column(sa.Date, nullable=False)
     info_json: str = sa.Column(sa.String, nullable=True)
     # Когда наступает next_update_dtm турнир подхватывается кроном
     # обрабатывающим обновление статусов игр
@@ -68,7 +68,7 @@ class Tournament(Base):
     next_update_dtm: int = sa.Column(sa.Integer, nullable=True)
     
 
-class Subscription(Base):
+class DBSubscription(Base):
     __tablename__ = 'subscriptions'
 
     user_id: int = sa.Column(
@@ -78,8 +78,41 @@ class Subscription(Base):
         sa.Integer, sa.ForeignKey('players.id'), primary_key=True
     )
 
+    @classmethod
+    def process_subs_diff(cls, session: Session, old_config: UserConfig, new_config: UserConfig):
+        """Обрабатывает изменения подписок пользователя.
+        Если subscription_on меняется с False на True, добавляет все друзей из new_config.
+        Если меняется с True на False, удаляет все подписки.
+        В противном случае обрабатывает разницу между списками друзей.
+        """
+        user_id = old_config.id
 
-class PlayerTournament(Base):
+        if not old_config.subscription_on and new_config.subscription_on:
+            # subscription_on переключился с False на True - добавить ВСЕ друзей из new_config
+            for friend_id in new_config.friend_ids:
+                sub = cls(user_id=user_id, player_id=friend_id)
+                session.add(sub)
+            return
+        elif old_config.subscription_on and not new_config.subscription_on:
+            # subscription_on переключился с True на False - удалить все подписки для этого пользователя
+            session.query(cls).filter_by(user_id=user_id).delete()
+            return
+
+        # Если статус subscription_on не изменился, обрабатываем разницу между списками друзей:
+        added_ids = new_config.friend_ids - old_config.friend_ids
+        for added_id in added_ids:
+            sub = cls(user_id=user_id, player_id=added_id)
+            session.add(sub)
+        
+        removed_ids = old_config.friend_ids - new_config.friend_ids
+        for removed_id in removed_ids:
+            sub = session.query(cls).filter_by(user_id=user_id, player_id=removed_id).first()
+            if sub:
+                session.delete(sub)
+
+
+
+class DBPlayerTournament(Base):
     __tablename__ = 'player_tournament'
 
     player_id: int = sa.Column(
