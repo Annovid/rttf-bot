@@ -32,11 +32,15 @@ class RTTFClient:
         cls,
         url: str,
         headers: dict[str, Any] | None = None,
+        raise_404: bool = True,
     ) -> requests.Response:
         if headers is None:
             headers = cls.headers
         try:
             response = requests.get(url=url, headers=headers)
+            if not raise_404 and response.status_code == 404:
+                logger.debug('Page not found %s', url)
+                return response
             response.raise_for_status()
             logger.debug('Successful request to %s', url)
             return response
@@ -124,9 +128,11 @@ class RTTFClient:
         tournament_id: int,
     ) -> str:
         url = os.path.join(cls.BASE_URL, 'tournaments', str(tournament_id))
-        response = cls.make_request(url)
-        logger.info('Downloaded tournament {}'.format(tournament_id))
-        return response.text
+        response = cls.make_request(url, raise_404=False)
+        if response.status_code != 404:
+            logger.info('Downloaded tournament {}'.format(tournament_id))
+            return response.text
+        return ''
 
     @classmethod
     def get_player(cls, player_id: int) -> str:

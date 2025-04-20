@@ -91,13 +91,24 @@ class PlayerService:
 
     def _update_player_tournaments(self, players, tournament_id):
         """Обновляет таблицу участий игроков в турнирах
-        Возвращает словарь с апдейтами
+
+        Returns:
+        updated (dict): словарь с апдейтами, которые пойдут в нотификации
+        is_ok (bool): False, если турнир не спарсился
         """
         page = self._get_tournament_page(tournament_id)
+
+        # Если page пустая, значит была ошибка 404 и турнир удалили
+        if page == '':
+           return {}, False
+
         tournament_obj: Tournament = TournamentParser.parse_data(page)
 
         players_dict = {}
 
+        # TODO: формирование этих объектов должно быть внутри парсинга
+        # Объединяем парсинг таблиц записавшихся, отказавшихся и сыгравших
+        # в один объект
         for player in tournament_obj.registered_players:
             if player.id not in players:
                 continue
@@ -134,6 +145,8 @@ class PlayerService:
                 games_lost=result.games_lost,
             )
 
+        # Смотрим на то, что лежит в базе
+        # Если появилось новое или обновилось старое - посылаем нотификацию
         updated = {}
         with open_session() as session:
             for player_id, info in players_dict.items():
@@ -156,7 +169,7 @@ class PlayerService:
                     updated[player_id] = info
             session.commit()
 
-        return updated
+        return updated, True
 
     def process_batch_and_notify(
         self, batch_size: int, now: Optional[datetime.datetime] = None
@@ -180,7 +193,14 @@ class PlayerService:
             unique_players = set(subscriptions.keys())
 
             for tournament in expired_tournaments:
-                updates = self._update_player_tournaments(unique_players, tournament.id)
+                updates, is_ok = self._update_player_tournaments(unique_players, tournament.id)
+
+                # Если турнир пропал с сайта перестаем его обовлять
+                if not is_ok:
+                    tournament.next_update_dtm = None
+                    session.commit()
+                    continue
+
                 # Главное - не поломаться в этот момент
                 # Если update отработает, а нотификации не отправятся, то мы их потеряем
                 # Можно сделать надежнее, но пока так

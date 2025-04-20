@@ -83,6 +83,8 @@ class TournamentPlayerService(SendUpdateMockMixin, PlayerService):
         if tournament_id == 168577:
             with open('htmls/2025-04-12/tournament/168577.html', 'r') as f:
                 return f.read()
+        if tournament_id == 123:
+            return ''
         raise ValueError("Expected on of predifined tournament ids")
 
 
@@ -102,7 +104,8 @@ def test_update_player_tournaments():
     players = [124031, 84962, 107011]
     tournament_id = 168138
     service = TournamentPlayerService()
-    updated = service._update_player_tournaments(players, tournament_id)
+    updated, is_ok = service._update_player_tournaments(players, tournament_id)
+    assert is_ok
     assert set(updated.keys()) == {124031, 84962}
     assert updated[124031].status == 'completed'
     assert updated[124031].games_won == 3
@@ -110,10 +113,16 @@ def test_update_player_tournaments():
 
     tournament_id = 168577
     service = TournamentPlayerService()
-    updated = service._update_player_tournaments(players, tournament_id)
+    updated, is_ok = service._update_player_tournaments(players, tournament_id)
+    assert is_ok
     assert set(updated.keys()) == {124031, 107011}
     assert updated[107011].status == 'registered'
     assert updated[124031].status == 'refused'
+
+    tournament_id = 123
+    service = TournamentPlayerService()
+    updated, is_ok = service._update_player_tournaments(players, tournament_id)
+    assert not is_ok
 
 
 def test_process_batch_and_notify():
