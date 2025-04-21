@@ -98,6 +98,19 @@ def test_update_player_tournaments():
     with SessionLocal() as session:
         user_config = DBUserConfig(id=1, config={})
         session.add(user_config)
+        t1 = DBTournament(
+            id=168138,
+            tournament_date=datetime.date(2025, 4, 5),
+            info_json='{}',
+            next_update_dtm=datetime.datetime(2025, 4, 12, 22, 0, 0).timestamp(),
+        )
+        t2 = DBTournament(
+            id=168577,
+            tournament_date=datetime.date(2025, 4, 13),
+            info_json='{}',
+            next_update_dtm=datetime.datetime(2025, 4, 12, 22, 0, 0).timestamp(),
+        )
+        session.add_all([t1, t2])
         # DBPlayer removed; players now represented as ints, so no need to add players.
         session.commit()
 

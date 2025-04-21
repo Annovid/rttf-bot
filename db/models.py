@@ -62,6 +62,17 @@ class DBTournament(Base):
     # обрабатывающим обновление статусов игр
     # NULL означает, что апдейты по этому турниру больше не нужны
     next_update_dtm: int = sa.Column(sa.Integer, nullable=True)
+    players: str = sa.Column(sa.String, nullable=True)
+
+    def set_players(self, players: list[int]):
+        "Переводит список интов в строку"
+        players_str = ",".join([f"_{player_id}_" for player_id in players])
+        self.players = players_str
+    
+    @classmethod
+    def contains_player(cls, player_id: int):
+        return cls.players.like(f"%_{player_id}_%")
+
     
 
 class DBSubscription(Base):

@@ -6,7 +6,7 @@ from parsers.parser import Parser
 from utils.models import Player, PlayerResult, Tournament
 
 
-class TournamentParser(Parser):
+class TournamentParser(Parser[Tournament]):
     @classmethod
     def _parse_data(cls, page: str) -> Tournament:
         soup = BeautifulSoup(page, 'html.parser')

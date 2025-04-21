@@ -51,7 +51,9 @@ class PlayerService:
         with open_session() as session:
             for tournament_parse in tournaments_data:
                 existing = (
-                    session.query(DBTournament).filter_by(id=tournament_parse.id).first()
+                    session.query(DBTournament)
+                    .filter_by(id=tournament_parse.id)
+                    .first()
                 )
                 if not existing:
                     # inserting new tournament record
@@ -100,11 +102,30 @@ class PlayerService:
 
         # Если page пустая, значит была ошибка 404 и турнир удалили
         if page == '':
-           return {}, False
+            return {}, False
 
-        tournament_obj: Tournament = TournamentParser.parse_data(page)
+        tournament_obj = TournamentParser.parse_data(page)
+        if tournament_obj is None:
+            raise RuntimeError('Parsing is failed')
 
-        players_dict = {}
+        # Обновляем поле players в таблице tournaments
+        all_players = [player.id for player in tournament_obj.registered_players]
+        all_players += [player.id for player in tournament_obj.refused_players]
+        all_players = list(set(all_players))
+        sorted(all_players)
+
+        with open_session() as session:
+            tournament = (
+                session.query(DBTournament)
+                .filter_by(id=tournament_id)
+                .first()
+            )
+            if tournament is None:
+                raise RuntimeError(f"tournament_id {tournament_id} должен быть в таблице tournaments")
+            tournament.set_players(all_players)
+            session.commit()
+
+        players_dict: dict[int, PlayerTournamentInfo] = {}
 
         # TODO: формирование этих объектов должно быть внутри парсинга
         # Объединяем парсинг таблиц записавшихся, отказавшихся и сыгравших
@@ -180,9 +201,7 @@ class PlayerService:
         with open_session() as session:
             expired_tournaments: list[DBTournament] = (
                 session.query(DBTournament)
-                .filter(
-                    DBTournament.next_update_dtm < now.timestamp()
-                )
+                .filter(DBTournament.next_update_dtm < now.timestamp())
                 .limit(batch_size)
                 .all()
             )
@@ -193,7 +212,9 @@ class PlayerService:
             unique_players = set(subscriptions.keys())
 
             for tournament in expired_tournaments:
-                updates, is_ok = self._update_player_tournaments(unique_players, tournament.id)
+                updates, is_ok = self._update_player_tournaments(
+                    unique_players, tournament.id
+                )
 
                 # Если турнир пропал с сайта перестаем его обовлять
                 if not is_ok:
@@ -215,9 +236,7 @@ class PlayerService:
                 ):
                     tournament.next_update_dtm = None
                 else:
-                    tournament.next_update_dtm = (
-                        now.timestamp() + 3600 * 4
-                    )
+                    tournament.next_update_dtm = now.timestamp() + 3600 * 4
                 # Если батч упадет посередине, то отработавшая часть не перезапустится
                 session.commit()
                 all_updates.extend(updates)

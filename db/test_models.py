@@ -47,13 +47,30 @@ def test_db_user_config(test_db):
 
 
 def test_tournament_model(test_db):
-    tournament = DBTournament(id=1, tournament_date=date(2023, 10, 26), info_json='{}')
-    test_db.add(tournament)
+    # Create tournament with id 1 and set players [1, 2, 3] using our custom storage format.
+    tournament1 = DBTournament(id=1, tournament_date=date(2023, 10, 26), info_json='{}')
+    tournament1.set_players([1, 2, 3])
+    test_db.add(tournament1)
+    test_db.commit()
+
+    # Create a second tournament without players.
+    tournament2 = DBTournament(id=2, tournament_date=date(2023, 10, 26), info_json='{}')
+    test_db.add(tournament2)
     test_db.commit()
     
+    # Retrieve tournament with id 1 and verify its data.
     retrieved_tournament = test_db.query(DBTournament).filter_by(id=1).first()
     assert retrieved_tournament is not None
     assert retrieved_tournament.tournament_date == date(2023, 10, 26)
+
+    # Query tournaments that contain the player id 2.
+    # Here, we assume you defined a method/property on DBTournament, e.g. a hybrid method,
+    # called `contains_player` that returns a SQL clause using LIKE.
+    found = test_db.query(DBTournament).filter(DBTournament.contains_player(2)).all()
+    assert len(found) == 1
+    assert found[0].id == 1
+
+
 
 def test_subscription_model(test_db):
     user_config = UserConfig(id=2, username="123")
@@ -68,7 +85,7 @@ def test_subscription_model(test_db):
     assert retrieved_subscription is not None
 
 def test_player_tournament_model(test_db):
-    tournament = DBTournament(id=2, tournament_date=date(2023, 10, 26), info_json='{}')
+    tournament = DBTournament(id=3, tournament_date=date(2023, 10, 26), info_json='{}')
     test_db.add(tournament)
     test_db.commit()
 
