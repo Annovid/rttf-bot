@@ -1,14 +1,13 @@
-import os
 import datetime
+import os
 
-import pytest
 import sqlalchemy as sa
 
 import utils.settings as settings_mod
-from db.models import Base, DBTournament, DBUserConfig, DBSubscription
+from bot.notifications import send_player_update
+from db.models import Base, DBSubscription, DBTournament, DBUserConfig
 from db.session_factory import SessionLocal
 from services.player_service import PlayerService
-from bot.notifications import send_player_update
 
 # Override DB settings for testing (using in-memory SQLite)
 TEST_DATABASE_URL = 'sqlite:///:memory:'
@@ -85,8 +84,7 @@ class TournamentPlayerService(SendUpdateMockMixin, PlayerService):
                 return f.read()
         if tournament_id == 123:
             return ''
-        raise ValueError("Expected on of predifined tournament ids")
-
+        raise ValueError('Expected on of predifined tournament ids')
 
 
 def test_update_player_tournaments():
@@ -168,11 +166,17 @@ def test_process_batch_and_notify():
     now = datetime.datetime(2025, 4, 12, 23, 0, 0)
     service = TournamentPlayerService()
     service.process_batch_and_notify(batch_size=10, now=now)
-    assert len(service.messages) == 3, f"Expected 3 messages for completed tournament, got {len(service.messages)}"
+    assert (
+        len(service.messages) == 3
+    ), f'Expected 3 messages for completed tournament, got {len(service.messages)}'
 
     with SessionLocal() as session:
-        tournament = session.query(DBTournament).filter(DBTournament.id == 168138).first()
+        tournament = (
+            session.query(DBTournament).filter(DBTournament.id == 168138).first()
+        )
         assert tournament.next_update_dtm is None
-        tournament = session.query(DBTournament).filter(DBTournament.id == 168577).first()
+        tournament = (
+            session.query(DBTournament).filter(DBTournament.id == 168577).first()
+        )
         expected = datetime.datetime(2025, 4, 12, 23, 0, 0).timestamp() + 7200
         assert abs(tournament.next_update_dtm - expected) < 1.0

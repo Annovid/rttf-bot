@@ -115,13 +115,11 @@ class PlayerService:
         sorted(all_players)
 
         with open_session() as session:
-            tournament = (
-                session.query(DBTournament)
-                .filter_by(id=tournament_id)
-                .first()
-            )
+            tournament = session.query(DBTournament).filter_by(id=tournament_id).first()
             if tournament is None:
-                raise RuntimeError(f"tournament_id {tournament_id} должен быть в таблице tournaments")
+                raise RuntimeError(
+                    f'tournament_id {tournament_id} должен быть в таблице tournaments'
+                )
             tournament.set_players(all_players)
             session.commit()
 
