@@ -1,8 +1,0 @@
-FROM python:3.10-slim
-WORKDIR /app
-COPY . .
-RUN apt-get update && apt-get install -y cron && \
-    pip install --no-cache-dir -r requirements.txt
-COPY crontab /etc/cron.d/tournaments_cron
-RUN chmod 0644 /etc/cron.d/tournaments_cron && crontab /etc/cron.d/tournaments_cron
-CMD ["cron", "-f"]
