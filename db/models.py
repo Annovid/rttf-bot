@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
@@ -77,6 +77,7 @@ class DBTournament(Base):
         tournaments = (
             session.query(DBTournament)
             .filter(DBTournament.contains_player(player_id))
+            .filter(DBTournament.tournament_date >= (ts.date() - timedelta(days=3)))
             .all()
         )
         for tournament in tournaments:
