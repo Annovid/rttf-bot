@@ -174,4 +174,5 @@ def test_process_batch_and_notify():
         tournament = session.query(DBTournament).filter(DBTournament.id == 168138).first()
         assert tournament.next_update_dtm is None
         tournament = session.query(DBTournament).filter(DBTournament.id == 168577).first()
-        assert (tournament.next_update_dtm - datetime.datetime(2025, 4, 13, 3, 0, 0).timestamp()) == 0
+        expected = datetime.datetime(2025, 4, 12, 23, 0, 0).timestamp() + 7200
+        assert abs(tournament.next_update_dtm - expected) < 1.0

@@ -2,4 +2,4 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 0 8,12,16,18,22 * * * cd /app && python main.py --parse-tournaments >> /app/cron.log 2>&1
-* * * * * cd /app && python main.py --process-tournaments-batch >> /app/cron.log 2>&1
+* 8-23 * * * cd /app && python main.py --process-tournaments-batch >> /app/cron.log 2>&1

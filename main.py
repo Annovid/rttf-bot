@@ -21,7 +21,7 @@ def main():
         print('\n'.join(map(str, tournaments_data)))
     elif args.process_tournaments_batch:
         player_service = PlayerService()
-        updates = player_service.process_batch_and_notify(batch_size=10)
+        updates = player_service.process_batch_and_notify(batch_size=20)
         print(updates)
     else:
         logger.info('Bot started')

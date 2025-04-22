@@ -236,7 +236,7 @@ class PlayerService:
                 ):
                     tournament.next_update_dtm = None
                 else:
-                    tournament.next_update_dtm = now.timestamp() + 3600 * 4
+                    tournament.next_update_dtm = now.timestamp() + 3600 * 2
                 # Если батч упадет посередине, то отработавшая часть не перезапустится
                 session.commit()
                 all_updates.extend(updates)
