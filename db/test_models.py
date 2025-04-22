@@ -58,7 +58,7 @@ def test_tournament_model(test_db):
     test_db.add(tournament2)
     test_db.commit()
     
-    # Retrieve tournament with id 1 and verify its data.
+    # retrieve tournament with id 1 and verify its data.  
     retrieved_tournament = test_db.query(DBTournament).filter_by(id=1).first()
     assert retrieved_tournament is not None
     assert retrieved_tournament.tournament_date == date(2023, 10, 26)
@@ -101,11 +101,21 @@ def test_process_subs_diff_activate(test_db):
     user_id = 10
     old_config = UserConfig(id=user_id, username="test", friend_ids={100, 101, 102}, subscription_on=False)
     new_config = UserConfig(id=user_id, username="test", friend_ids={100, 101, 102}, subscription_on=True)
-    DBSubscription.process_subs_diff(test_db, old_config, new_config)
+    # Create a tournament that includes friend 100 so we can check update timestamp
+    tournament = DBTournament(id=1000, tournament_date=date(2023, 10, 26), info_json='{}')
+    tournament.set_players([100])
+    test_db.add(tournament)
+    test_db.commit()
+    from datetime import datetime
+    now = datetime.now()
+    DBSubscription.process_subs_diff(test_db, old_config, new_config, now=now)
     test_db.commit()
     subs = test_db.query(DBSubscription).filter_by(user_id=user_id).all()
     friend_ids = {sub.player_id for sub in subs}
     assert friend_ids == {100, 101, 102}
+    tournament = test_db.query(DBTournament).filter_by(id=1000).first()
+    assert tournament.next_update_dtm is not None
+    assert abs(tournament.next_update_dtm - now.timestamp()) < 1.0
 
 def test_process_subs_diff_deactivate(test_db):
     # Subscription deactivation: true -> false, remove all subscriptions
@@ -129,10 +139,20 @@ def test_process_subs_diff_incremental(test_db):
     for fid in old_config.friend_ids:
          test_db.add(DBSubscription(user_id=user_id, player_id=fid))
     test_db.commit()
+    # Create a tournament that includes the new friend 303
+    tournament = DBTournament(id=1001, tournament_date=date(2023, 10, 26), info_json='{}')
+    tournament.set_players([303])
+    test_db.add(tournament)
+    test_db.commit()
+    from datetime import datetime
+    now = datetime.now()
     # New config: remove 300, add 303
     new_config = UserConfig(id=user_id, username="test", friend_ids={301, 302, 303}, subscription_on=True)
-    DBSubscription.process_subs_diff(test_db, old_config, new_config)
+    DBSubscription.process_subs_diff(test_db, old_config, new_config, now=now)
     test_db.commit()
     subs = test_db.query(DBSubscription).filter_by(user_id=user_id).all()
     friend_ids = {sub.player_id for sub in subs}
     assert friend_ids == {301, 302, 303}
+    tournament = test_db.query(DBTournament).filter_by(id=1001).first()
+    assert tournament.next_update_dtm is not None
+    assert abs(tournament.next_update_dtm - now.timestamp()) < 1.0
