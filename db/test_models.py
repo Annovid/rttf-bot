@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from alembic import command
@@ -106,7 +106,6 @@ def test_process_subs_diff_activate(test_db):
     tournament.set_players([100])
     test_db.add(tournament)
     test_db.commit()
-    from datetime import datetime
     now = datetime.now()
     DBSubscription.process_subs_diff(test_db, old_config, new_config, now=now)
     test_db.commit()
@@ -144,7 +143,6 @@ def test_process_subs_diff_incremental(test_db):
     tournament.set_players([303])
     test_db.add(tournament)
     test_db.commit()
-    from datetime import datetime
     now = datetime.now()
     # New config: remove 300, add 303
     new_config = UserConfig(id=user_id, username="test", friend_ids={301, 302, 303}, subscription_on=True)

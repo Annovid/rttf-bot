@@ -4,9 +4,8 @@ from sqlalchemy.orm import Session
 
 from utils.models import UserConfig
 from utils.settings import settings
-from utils.custom_logger import logger
 
-from datetime import date
+from datetime import date, datetime
 
 
 engine = sa.create_engine(settings.DB_URL)
@@ -72,6 +71,13 @@ class DBTournament(Base):
     @classmethod
     def contains_player(cls, player_id: int):
         return cls.players.like(f"%_{player_id}_%")
+    
+    @classmethod
+    def set_tournaments_update_dtm_by_player(cls, session: Session, player_id: int, ts: datetime = None):
+        """Изменяет таймстемп следующего апдейта у турниров, в которых есть указанный player_id"""
+        tournaments = session.query(DBTournament).filter(DBTournament.contains_player(player_id)).all()
+        for tournament in tournaments:
+            tournament.next_update_dtm = ts.timestamp()
 
     
 
@@ -84,13 +90,18 @@ class DBSubscription(Base):
     player_id: int = sa.Column(sa.Integer, primary_key=True)
 
     @classmethod
-    def process_subs_diff(cls, session: Session, old_config: UserConfig, new_config: UserConfig):
+    def process_subs_diff(cls, session: Session, old_config: UserConfig, new_config: UserConfig, now: datetime = None):
         """Обрабатывает изменения подписок пользователя.
         Если subscription_on меняется с False на True, добавляет все друзей из new_config.
         Если меняется с True на False, удаляет все подписки.
         В противном случае обрабатывает разницу между списками друзей.
+
+        При появлении подписок или нового друга, сбрасываем время апдейта турнира,
+        чтобы по этому игроку сразу пришли обновления
         """
         user_id = old_config.id
+        if now is None:
+            now = datetime.now()
 
         if not old_config.subscription_on and new_config.subscription_on:
             # subscription_on переключился с False на True - добавить ВСЕ друзей из new_config
@@ -99,6 +110,8 @@ class DBSubscription(Base):
                 if not session.query(cls).filter_by(user_id=user_id, player_id=friend_id).first():
                     sub = cls(user_id=user_id, player_id=friend_id)
                     session.add(sub)
+                    # Сбрасываем время апдейта турниров, где есть друг
+                    DBTournament.set_tournaments_update_dtm_by_player(session, friend_id, now)
             return
         elif old_config.subscription_on and not new_config.subscription_on:
             # subscription_on переключился с True на False - удалить все подписки для этого пользователя
@@ -114,6 +127,8 @@ class DBSubscription(Base):
             if not session.query(cls).filter_by(user_id=user_id, player_id=added_id).first():
                 sub = cls(user_id=user_id, player_id=added_id)
                 session.add(sub)
+                # Сбрасываем время апдейта турниров, где есть друг
+                DBTournament.set_tournaments_update_dtm_by_player(session, added_id, now)
         
         removed_ids = old_config.friend_ids - new_config.friend_ids
         for removed_id in removed_ids:
