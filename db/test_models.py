@@ -119,13 +119,14 @@ def test_process_subs_diff_activate(test_db):
         id=user_id, username='test', friend_ids={100, 101, 102}, subscription_on=True
     )
     # Create a tournament that includes friend 100 so we can check update timestamp
+    now = datetime(2023, 10, 27, 12, 0, 0)
     tournament = DBTournament(
-        id=1000, tournament_date=date(2023, 10, 26), info_json='{}'
+        id=1000, tournament_date=now.date(), info_json='{}'
     )
     tournament.set_players([100])
     test_db.add(tournament)
     test_db.commit()
-    now = datetime.now()
+    
     DBSubscription.process_subs_diff(test_db, old_config, new_config, now=now)
     test_db.commit()
     subs = test_db.query(DBSubscription).filter_by(user_id=user_id).all()
@@ -166,13 +167,14 @@ def test_process_subs_diff_incremental(test_db):
         test_db.add(DBSubscription(user_id=user_id, player_id=fid))
     test_db.commit()
     # Create a tournament that includes the new friend 303
+    now = datetime(2023, 10, 27, 12, 0, 0)
     tournament = DBTournament(
-        id=1001, tournament_date=date(2023, 10, 26), info_json='{}'
+        id=1001, tournament_date=now.date(), info_json='{}'
     )
     tournament.set_players([303])
     test_db.add(tournament)
     test_db.commit()
-    now = datetime.now()
+    
     # New config: remove 300, add 303
     new_config = UserConfig(
         id=user_id, username='test', friend_ids={301, 302, 303}, subscription_on=True

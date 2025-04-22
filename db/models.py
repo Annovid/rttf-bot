@@ -73,7 +73,10 @@ class DBTournament(Base):
     def set_tournaments_update_dtm_by_player(
         cls, session: Session, player_id: int, ts: datetime = None
     ):
-        """Изменяет таймстемп следующего апдейта у турниров, в которых есть указанный player_id"""
+        """Изменяет таймстемп следующего апдейта у турниров, в которых есть указанный player_id
+        Турниры берутся не старше 3 дней от таймстемпа
+        TODO: сделать это параметром
+        """
         tournaments = (
             session.query(DBTournament)
             .filter(DBTournament.contains_player(player_id))
