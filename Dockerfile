@@ -1,5 +1,9 @@
 FROM python:3.10-slim
 
+# Set timezone
+ENV TZ=Europe/Moscow
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 RUN pip install poetry
 
 RUN apt-get update && \
