@@ -14,12 +14,9 @@ def test_parse_player_results():
     assert parse_result.player_results[1].games_lost > 0
 
 def test_online_tournament():
-    from bs4 import BeautifulSoup
-    with open('htmls/2025-04-25/tournament/169905.html', 'r') as f:
+    with open('htmls/2025-04-25/tournament/169946.html', 'r') as f:
         page = f.read()
-    soup = BeautifulSoup(page, 'html.parser')
-    # Check that the tournament page is marked as online.
-    assert TournamentParser._is_online(soup) is True
     # When online, the tournament should not be completed.
     parse_result = TournamentParser().parse_data(page)
+    assert parse_result.is_online is True
     assert parse_result.is_completed is False

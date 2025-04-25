@@ -93,6 +93,7 @@ class PlayerService:
 
     def _update_player_tournaments(self, players, tournament_id):
         """Обновляет таблицу участий игроков в турнирах
+        Не пишет обновления по идущим турнирам
 
         Returns:
         updated (dict): словарь с апдейтами, которые пойдут в нотификации
@@ -107,6 +108,10 @@ class PlayerService:
         tournament_obj = TournamentParser.parse_data(page)
         if tournament_obj is None:
             raise RuntimeError('Parsing is failed')
+        
+        # Если турнир онлайн - не обновляем
+        if tournament_obj.is_online:
+            return {}, True
 
         # Обновляем поле players в таблице tournaments
         all_players = [player.id for player in tournament_obj.registered_players]
@@ -210,7 +215,7 @@ class PlayerService:
             unique_players = set(subscriptions.keys())
 
             for tournament in expired_tournaments:
-                updates, is_ok = self._update_player_tournaments(
+                updates, is_ok= self._update_player_tournaments(
                     unique_players, tournament.id
                 )
 

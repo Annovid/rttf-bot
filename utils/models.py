@@ -161,6 +161,7 @@ class Tournament:
     id: int
     name: str
     is_completed: bool = False
+    is_online: bool = False
     registered_players: list[Player] = field(default_factory=list)
     refused_players: list[Player] = field(default_factory=list)
     player_results: list[PlayerResult] = field(default_factory=list)

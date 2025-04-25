@@ -12,6 +12,8 @@ class TournamentParser(Parser[Tournament]):
         soup = BeautifulSoup(page, 'html.parser')
 
         tournament_info = soup.find('h1')
+        # Эта строчка работает только с мобильной страницей. На десктопе
+        # time находится перед h1, а не внутри
         time_element = tournament_info.find('time')
         date_time = time_element.text.strip()  # Извлечение даты и времени
         tournament_name = tournament_info.text.replace(
@@ -29,7 +31,10 @@ class TournamentParser(Parser[Tournament]):
         registered_players = cls._parse_registered_players(soup)
         refused_players = cls._parse_withdrawn_players(soup)
 
-        is_completed = cls._is_completed(soup)
+        is_completed = False
+        is_online = cls._is_online(soup)
+        if not is_online:
+            is_completed = cls._is_completed(soup)
         player_results = []
         if is_completed:
             player_results = cls._parse_player_results(soup)
@@ -38,6 +43,7 @@ class TournamentParser(Parser[Tournament]):
             id=tournament_id,
             name=f'{tournament_name} ({date_time}, {tournament_location})',
             is_completed=is_completed,
+            is_online=is_online,
             registered_players=registered_players,
             refused_players=refused_players,
             player_results=player_results,
@@ -47,6 +53,13 @@ class TournamentParser(Parser[Tournament]):
     def _is_completed(cls, soup: BeautifulSoup) -> bool:
         table_completted = soup.find('table', class_='tablesort tour-players')
         if table_completted:
+            return True
+        return False
+
+    @classmethod
+    def _is_online(cls, soup: BeautifulSoup) -> bool:
+        li_tour_online = soup.find('li', attrs={'data-tab': 'tour-online'})
+        if li_tour_online:
             return True
         return False
 
