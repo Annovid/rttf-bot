@@ -205,6 +205,7 @@ class PlayerService:
             expired_tournaments: list[DBTournament] = (
                 session.query(DBTournament)
                 .filter(DBTournament.next_update_dtm < now.timestamp())
+                .order_by(DBTournament.next_update_dtm)
                 .limit(batch_size)
                 .all()
             )
@@ -235,7 +236,7 @@ class PlayerService:
 
                 # Установка времени следующего апдейта турнира
                 if tournament.tournament_date < (
-                    now.date() - datetime.timedelta(days=3)
+                    now.date() - datetime.timedelta(days=2)
                 ):
                     tournament.next_update_dtm = None
                 else:
