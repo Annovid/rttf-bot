@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo $DB_URL
+
 # Apply migrations
 python -m alembic upgrade head
 

@@ -26,7 +26,9 @@ class RTTFClient:
     @retry(
         stop=stop_after_attempt(3),  # Остановиться после 3 попыток
         wait=wait_fixed(2),  # Ждать 2 секунды между попытками
-        retry=retry_if_exception_type(requests.RequestException),  # Повторять только при ошибках requests
+        retry=retry_if_exception_type(
+            requests.RequestException
+        ),  # Повторять только при ошибках requests
     )
     def make_request(
         cls,
@@ -78,9 +80,9 @@ class RTTFClient:
         only_moscow: bool = True,
     ) -> str:
         if date_range is None and only_moscow:
-            return f'https://m.rttf.ru/tournaments/?cities[]=r77'
+            return 'https://m.rttf.ru/tournaments/?cities[]=r77'
         if date_range is None and not only_moscow:
-            raise NotImplemented('Bad params')
+            raise NotImplementedError('Bad params')
         msc_substr = '&cities%5B%5D=r77' if only_moscow else ''
         return (
             f'https://m.rttf.ru/tournaments/'
@@ -108,8 +110,8 @@ class RTTFClient:
 
     @classmethod
     def get_tournaments_pages(
-            cls,
-            date_range: DateRange | None = None,
+        cls,
+        date_range: DateRange | None = None,
     ) -> list[str]:
         if date_range is None:
             date_range = DateRange()

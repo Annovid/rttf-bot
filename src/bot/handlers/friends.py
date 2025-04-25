@@ -32,7 +32,7 @@ def register_handlers(bot_context: BotContext):
                 '/add\_friend',  # noqa
             )
             return
-        reply_text = f'Список ваших друзей:\n\n'
+        reply_text = 'Список ваших друзей:\n\n'
         for friend_id in friend_ids:
             try:
                 friend = get_player_info(friend_id)
@@ -49,9 +49,9 @@ def register_handlers(bot_context: BotContext):
         if not friend_ids:
             bot_context.bot.reply_to(
                 message,
-                f'У вас нет друзей (\n'
-                f'Если хотите удалить друзей, сначала их добавьте с помощью '
-                f'команды /add\_friend',  # noqa
+                'У вас нет друзей (\n'
+                'Если хотите удалить друзей, сначала их добавьте с помощью '
+                'команды /add\_friend',  # noqa
             )
             with bot_context.user_config_session(message) as user_config:
                 user_config.state = StateMachine.MAIN

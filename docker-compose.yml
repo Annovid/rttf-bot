@@ -18,14 +18,10 @@ services:
       - TOKEN=${TOKEN}
       - DB_URL=${DB_URL}
     restart: always
-    depends_on:
-      - rttf_bot_db
   rttf_bot_cron:
     build: .
     environment:
       - TOKEN=${TOKEN}
       - DB_URL=${DB_URL}
     restart: always
-    depends_on:
-      - rttf_bot_db
     command: ["cron", "-f"]

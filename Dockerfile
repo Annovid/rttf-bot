@@ -10,7 +10,7 @@ RUN apt-get update && \
     apt-get install -y libpq-dev build-essential gcc cron && \
     apt-get clean
 
-WORKDIR /app
+WORKDIR /app/src
 
 COPY pyproject.toml poetry.lock* README.md /app/
 

@@ -20,7 +20,7 @@ class PlayersParser(Parser):
                 continue  # Пропускаем некорректные строки
 
             # Извлечение данных из ячеек
-            rank = cells[0].text.strip()  # Рейтинг
+            # rank = cells[0].text.strip()  # Рейтинг
             name = cells[1].text.strip()  # Имя
             player_id = int(cells[1].find('a')['href'].split('/')[-1])
             city = cells[2].text.strip()  # Город

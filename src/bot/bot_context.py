@@ -40,10 +40,10 @@ def extended_message_handler(handler_decorator):
             def wrapped_handler(message, *args, **kwargs_wrapped):
                 start_time = time.time()
                 user_id = message.from_user.id
-                user_text = message.text[:100] if message.text else "<non-text content>"
+                user_text = message.text[:100] if message.text else '<non-text content>'
                 logger.info(
                     f"Handler '{handler_function.__name__}' called by user {user_id} "
-                    f"with message: {user_text!r}"
+                    f'with message: {user_text!r}'
                 )
                 try:
                     result = handler_function(message, *args, **kwargs_wrapped)
@@ -51,12 +51,15 @@ def extended_message_handler(handler_decorator):
                     elapsed_time = time.time() - start_time
                     logger.info(
                         f"Handler '{handler_function.__name__}' finished "
-                        f"in {elapsed_time:.2f}s for user {user_id}"
+                        f'in {elapsed_time:.2f}s for user {user_id}'
                     )
 
                 return result
+
             return handler_decorator(commands=commands, **kwargs)(wrapped_handler)
+
         return wrapper
+
     return decorator
 
 

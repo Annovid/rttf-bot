@@ -28,6 +28,7 @@ def test_db():
     # Apply Alembic migrations
     alembic_cfg = Config('alembic.ini')
     alembic_cfg.attributes['connection'] = engine
+    # alembic_cfg.set_main_option("script_location", "src/db/migrations")
     command.upgrade(alembic_cfg, 'head')
 
     session = SessionLocal()
