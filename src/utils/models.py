@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from utils.custom_logger import logger
+import json
 
 
 class StateMachine(enum.Enum):
@@ -29,6 +30,7 @@ class UserConfig:
     friend_ids: set[int] = field(default_factory=set)
     username: str | None = ''
     full_name: str | None = ''
+    subscription_on: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Конвертирует объект в словарь."""
@@ -38,6 +40,7 @@ class UserConfig:
             'friend_ids': list(self.friend_ids),
             'username': self.username,
             'full_name': self.full_name,
+            'subscription_on': self.subscription_on
         }
 
     @classmethod
@@ -49,6 +52,7 @@ class UserConfig:
             friend_ids=set(user_config_dict['friend_ids']),
             username=user_config_dict.get('username', ''),
             full_name=user_config_dict.get('full_name', ''),
+            subscription_on=user_config_dict.get('subscription_on', False),
         )
 
 
@@ -136,13 +140,30 @@ class Player:
         # Join non-empty strings with new lines
         return '\n'.join(filter(bool, md_representation))
 
+@dataclass
+class PlayerResult:
+    player_id: int
+    name: str
+    rating_before: float
+    rating_delta: float
+    rating_after: float
+    games_won: int
+    games_lost: int
+
+    def to_md_one_str(self) -> str:
+        return (
+            f'[{self.player_id}](https://m.rttf.ru/players/{self.player_id}): *{self.name}*'
+            f' rating:{self.rating_before:.0f} delta:{self.rating_delta} won:{self.games_won} lost:{self.games_lost}')
 
 @dataclass
 class Tournament:
     id: int
     name: str
-    registered_players: list[Player]
-    refused_players: list[Player]
+    is_completed: bool = False
+    is_online: bool = False
+    registered_players: list[Player] = field(default_factory=list)
+    refused_players: list[Player] = field(default_factory=list)
+    player_results: list[PlayerResult] = field(default_factory=list)
 
     def __post_init__(self):
         if not isinstance(self.id, int):
@@ -167,3 +188,34 @@ class Tournament:
 
     def to_md_one_str(self) -> str:
         return f'[{self.id}](https://m.rttf.ru/tournaments/{self.id}): *{self.name}*'
+
+    def to_md_player_results(self) -> str:
+        res = self.to_md_one_str()
+        if not self.player_results: 
+            return res
+        res += '\n'
+        def pr_to_str(pr: PlayerResult):
+            return f"{pr:id}"
+        res += '\n'.join([pr.to_md_one_str() for pr in self.player_results])
+        return res
+
+
+@dataclass
+class PlayerTournamentInfo:
+    player_id: int
+    tournament_id: int
+    status: str
+    player_name: str = ""
+    tournament_name: str = ""
+    rating_before: float = ""
+    rating_delta: float = ""
+    rating_after: float = ""
+    games_won: int = 0
+    games_lost: int = 0
+
+    def serialize(self) -> str:
+        return json.dumps(self.__dict__, sort_keys=True)
+
+    @classmethod
+    def deserialize(cls, data: str) -> "PlayerTournamentInfo":
+        return cls(**json.loads(data))

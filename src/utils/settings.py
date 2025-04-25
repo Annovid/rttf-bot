@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     MAX_WORKERS: int = 5
 
     class Config:
+        extra = "ignore"
         env_file = ENV_PATH
 
 

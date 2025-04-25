@@ -1,3 +1,5 @@
+from datetime import date, datetime, timedelta
+
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
@@ -14,7 +16,7 @@ class DBUserConfig(Base):
     __tablename__ = 'user_configs'
 
     id: int = sa.Column(sa.Integer, primary_key=True)
-    config: dict = sa.Column(sa.JSON)
+    config: dict = sa.Column(sa.JSON, nullable=False)
 
     @classmethod
     def get_all(cls, session: Session) -> list[UserConfig]:
@@ -44,3 +46,130 @@ class DBUserConfig(Base):
             session.add(db_user_config)
 
         session.commit()
+
+
+class DBTournament(Base):
+    __tablename__ = 'tournaments'
+
+    id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=False)
+    tournament_date: date = sa.Column(sa.Date, nullable=False)
+    info_json: str = sa.Column(sa.String, nullable=True)
+    # Когда наступает next_update_dtm турнир подхватывается кроном
+    # обрабатывающим обновление статусов игр
+    # NULL означает, что апдейты по этому турниру больше не нужны
+    next_update_dtm: int = sa.Column(sa.Integer, nullable=True)
+    players: str = sa.Column(sa.String, nullable=True)
+
+    def set_players(self, players: list[int]):
+        "Переводит список интов в строку"
+        players_str = ','.join([f'_{player_id}_' for player_id in players])
+        self.players = players_str
+
+    @classmethod
+    def contains_player(cls, player_id: int):
+        return cls.players.like(f'%_{player_id}_%')
+
+    @classmethod
+    def set_tournaments_update_dtm_by_player(
+        cls, session: Session, player_id: int, ts: datetime = None
+    ):
+        """Изменяет таймстемп следующего апдейта у турниров, в которых есть указанный player_id
+        Турниры берутся не старше 3 дней от таймстемпа
+        TODO: сделать это параметром
+        """
+        tournaments = (
+            session.query(DBTournament)
+            .filter(DBTournament.contains_player(player_id))
+            .filter(DBTournament.tournament_date >= (ts.date() - timedelta(days=3)))
+            .all()
+        )
+        for tournament in tournaments:
+            tournament.next_update_dtm = ts.timestamp()
+
+
+class DBSubscription(Base):
+    __tablename__ = 'subscriptions'
+
+    user_id: int = sa.Column(
+        sa.Integer, sa.ForeignKey('user_configs.id'), primary_key=True
+    )
+    player_id: int = sa.Column(sa.Integer, primary_key=True)
+
+    @classmethod
+    def process_subs_diff(
+        cls,
+        session: Session,
+        old_config: UserConfig,
+        new_config: UserConfig,
+        now: datetime = None,
+    ):
+        """Обрабатывает изменения подписок пользователя.
+        Если subscription_on меняется с False на True, добавляет все друзей из new_config.
+        Если меняется с True на False, удаляет все подписки.
+        В противном случае обрабатывает разницу между списками друзей.
+
+        При появлении подписок или нового друга, сбрасываем время апдейта турнира,
+        чтобы по этому игроку сразу пришли обновления
+        """
+        user_id = old_config.id
+        if now is None:
+            now = datetime.now()
+
+        if not old_config.subscription_on and new_config.subscription_on:
+            # subscription_on переключился с False на True - добавить ВСЕ друзей из new_config
+            for friend_id in new_config.friend_ids:
+                sub = cls(user_id=user_id, player_id=friend_id)
+                if (
+                    not session.query(cls)
+                    .filter_by(user_id=user_id, player_id=friend_id)
+                    .first()
+                ):
+                    sub = cls(user_id=user_id, player_id=friend_id)
+                    session.add(sub)
+                    # Сбрасываем время апдейта турниров, где есть друг
+                    DBTournament.set_tournaments_update_dtm_by_player(
+                        session, friend_id, now
+                    )
+            return
+        elif old_config.subscription_on and not new_config.subscription_on:
+            # subscription_on переключился с True на False - удалить все подписки для этого пользователя
+            session.query(cls).filter_by(user_id=user_id).delete()
+            return
+
+        if not new_config.subscription_on:
+            return
+
+        # Если статус subscription_on не изменился, обрабатываем разницу между списками друзей:
+        added_ids = new_config.friend_ids - old_config.friend_ids
+        for added_id in added_ids:
+            if (
+                not session.query(cls)
+                .filter_by(user_id=user_id, player_id=added_id)
+                .first()
+            ):
+                sub = cls(user_id=user_id, player_id=added_id)
+                session.add(sub)
+                # Сбрасываем время апдейта турниров, где есть друг
+                DBTournament.set_tournaments_update_dtm_by_player(
+                    session, added_id, now
+                )
+
+        removed_ids = old_config.friend_ids - new_config.friend_ids
+        for removed_id in removed_ids:
+            sub = (
+                session.query(cls)
+                .filter_by(user_id=user_id, player_id=removed_id)
+                .first()
+            )
+            if sub:
+                session.delete(sub)
+
+
+class DBPlayerTournament(Base):
+    __tablename__ = 'player_tournament'
+
+    player_id: int = sa.Column(sa.Integer, primary_key=True)
+    tournament_id: int = sa.Column(
+        sa.Integer, sa.ForeignKey('tournaments.id'), primary_key=True
+    )
+    info_json: str = sa.Column(sa.String)

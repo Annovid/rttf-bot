@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
@@ -9,7 +10,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 @contextmanager
-def open_session() -> Session:
+def open_session() -> Generator[Session, None, None]:
     """
     Создает новую сессию для взаимодействия с базой данных.
     Автоматически закрывает сессию по завершении контекста.

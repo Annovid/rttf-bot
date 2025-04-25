@@ -27,6 +27,9 @@ class TournamentParseResult(BaseModel):
     rating: str | None = Field(int, description='Mean rating of the tournament')
     type: str = Field(int | None, description='Max rating')
 
+    def __str__(self):
+        return f"Tournament id:{self.id} name:{self.name} rating:{self.rating} dtm:{self.datetime}"
+
 
 class TournamentsParseResult(BaseModel):
     tournaments: list[TournamentParseResult] = Field(list[TournamentParseResult])

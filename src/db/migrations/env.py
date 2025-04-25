@@ -7,6 +7,7 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine
 
 from db.models import Base
+from utils.settings import settings
 
 config: Config = context.config
 
@@ -17,12 +18,7 @@ target_metadata = Base.metadata
 
 
 def get_db_url():
-    db_url = os.getenv('POSTGRES_CONNECTION_STRING')
-    if not db_url:
-        raise EnvironmentError(
-            'Environment variable POSTGRES_CONNECTION_STRING is not set'
-        )
-    return db_url
+    return os.getenv("DB_URL") or settings.DB_URL
 
 
 def process_revision_directives(context, revision, directives):
@@ -50,7 +46,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    connectable = create_engine(get_db_url())
+    connectable = config.attributes.get('connection', create_engine(get_db_url()))
     with connectable.connect() as connection:
         context.configure(
             connection=connection,

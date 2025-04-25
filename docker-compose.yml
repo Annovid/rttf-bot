@@ -1,22 +1,27 @@
 version: '3'
 
 services:
-#  rttf_bot_db:
-#    image: postgres:13-alpine
-#    container_name: rttf_bot_db
-#    environment:
-#      POSTGRES_DB: rttf_bot
-#      POSTGRES_USER: pguser
-#      POSTGRES_PASSWORD: pgpass
-#    ports:
-#      - "5432:5432"
-#    volumes:
-#      - ./resources/volumes:/var/lib/postgresql
+  rttf_bot_db:
+    image: postgres:13-alpine
+    container_name: rttf_bot_db
+    environment:
+      POSTGRES_DB: rttf_bot
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: pgpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./resources/volumes/pg_data:/var/lib/postgresql/data
   rttf_bot_app:
     build: .
     environment:
       - TOKEN=${TOKEN}
       - DB_URL=${DB_URL}
     restart: always
-#    depends_on:
-#      - rttf_bot_db
+  rttf_bot_cron:
+    build: .
+    environment:
+      - TOKEN=${TOKEN}
+      - DB_URL=${DB_URL}
+    restart: always
+    command: ["cron", "-f"]

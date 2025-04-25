@@ -3,7 +3,7 @@ import re
 
 
 def get_text(filename):
-    filepath = os.path.join('static/texts', filename)
+    filepath = os.path.join('../static/texts', filename)
     with open(filepath, 'r') as f:
         text = f.read()
     return text
