@@ -17,6 +17,8 @@ COPY pyproject.toml poetry.lock* README.md /app/
 RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi --no-root
 
 COPY . /app
+# Для крона переменные окружения читаются из .env файла
+COPY .env /app/src/
 
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
