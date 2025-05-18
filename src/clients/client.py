@@ -1,5 +1,7 @@
 import os.path
 import datetime
+import random
+import time
 from multiprocessing.pool import ThreadPool
 from typing import Any
 
@@ -9,6 +11,16 @@ from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_t
 from utils.models import DateRange
 from utils.settings import settings
 from utils.custom_logger import logger
+
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:112.0) Gecko/20100101 Firefox/112.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, "
+    "like Gecko) Chrome/110.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/113.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 ("
+    "KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+]
 
 
 class RTTFClient:
@@ -24,20 +36,20 @@ class RTTFClient:
 
     @classmethod
     @retry(
-        stop=stop_after_attempt(3),  # Остановиться после 3 попыток
-        wait=wait_fixed(2),  # Ждать 2 секунды между попытками
-        retry=retry_if_exception_type(
-            requests.RequestException
-        ),  # Повторять только при ошибках requests
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(2),
+        retry=retry_if_exception_type((requests.RequestException, RuntimeError)),
     )
     def make_request(
-        cls,
-        url: str,
-        headers: dict[str, Any] | None = None,
-        raise_404: bool = True,
+            cls,
+            url: str,
+            headers: dict[str, Any] | None = None,
+            raise_404: bool = True,
     ) -> requests.Response:
         if headers is None:
-            headers = cls.headers
+            headers = cls.headers.copy()
+        headers["User-Agent"] = random.choice(USER_AGENTS)
+
         try:
             response = requests.get(url=url, headers=headers)
             if not raise_404 and response.status_code == 404:
@@ -52,7 +64,7 @@ class RTTFClient:
 
     @classmethod
     def make_request_all_data(
-        cls, url: str, headers: dict[str, Any] | None = None
+            cls, url: str, headers: dict[str, Any] | None = None
     ) -> list:
         if headers is None:
             headers = cls.headers
@@ -70,14 +82,14 @@ class RTTFClient:
                 # Update `url` for the next page
                 url = data.get('next')
             except requests.RequestException as e:
-                raise RuntimeError(f'Error during request: {e}')
+                 raise RuntimeError(f'Error during request: {e}')
         return all_data
 
     @classmethod
     def create_url_for_get_tournaments_pages(
-        cls,
-        date_range: DateRange | None = None,
-        only_moscow: bool = True,
+            cls,
+            date_range: DateRange | None = None,
+            only_moscow: bool = True,
     ) -> str:
         if date_range is None and only_moscow:
             return 'https://m.rttf.ru/tournaments/?cities[]=r77'
@@ -110,8 +122,8 @@ class RTTFClient:
 
     @classmethod
     def get_tournaments_pages(
-        cls,
-        date_range: DateRange | None = None,
+            cls,
+            date_range: DateRange | None = None,
     ) -> list[str]:
         if date_range is None:
             date_range = DateRange()
@@ -126,8 +138,8 @@ class RTTFClient:
 
     @classmethod
     def get_tournament(
-        cls,
-        tournament_id: int,
+            cls,
+            tournament_id: int,
     ) -> str:
         url = os.path.join(cls.BASE_URL, 'tournaments', str(tournament_id))
         response = cls.make_request(url, raise_404=False)

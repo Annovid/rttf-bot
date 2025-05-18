@@ -4,24 +4,24 @@ services:
   rttf_bot_db:
     image: postgres:13-alpine
     container_name: rttf_bot_db
-    environment:
-      POSTGRES_DB: rttf_bot
-      POSTGRES_USER: pguser
-      POSTGRES_PASSWORD: pgpass
+    env_file:
+      - .env
     ports:
       - "5432:5432"
     volumes:
       - ./resources/volumes/pg_data:/var/lib/postgresql/data
   rttf_bot_app:
     build: .
+    env_file:
+      - .env
     environment:
-      - TOKEN=${TOKEN}
-      - DB_URL=${DB_URL}
+      - SERVICE_NAME=rttf_bot_app
     restart: always
   rttf_bot_cron:
     build: .
+    env_file:
+      - .env
     environment:
-      - TOKEN=${TOKEN}
-      - DB_URL=${DB_URL}
+      - SERVICE_NAME=rttf_bot_app
     restart: always
     command: ["cron", "-f"]
