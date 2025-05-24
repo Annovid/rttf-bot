@@ -22,6 +22,6 @@ services:
     env_file:
       - .env
     environment:
-      - SERVICE_NAME=rttf_bot_app
+      - SERVICE_NAME=rttf_bot_cron
     restart: always
     command: ["cron", "-f"]

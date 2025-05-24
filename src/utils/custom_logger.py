@@ -15,7 +15,7 @@ class CustomLogger:
         logger.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)-8s - %(message)s'
+            fmt='%(asctime)s - %(levelname)-8s - %(message)s'
         )
 
         CustomLogger._add_file_handler(logger, formatter)
@@ -60,7 +60,7 @@ class CustomLogger:
                 tags={
                     "application": "rttf-bot",
                     "environment": environment,
-                    "hostname": os.uname().nodename,
+                    "service": settings.SERVICE_NAME,
                 },
                 version="1",
             )

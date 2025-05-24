@@ -1,11 +1,6 @@
-import sys
 import argparse
-import datetime
 from bot.bot_setup import bot_context
 from utils.custom_logger import logger
-from clients.client import RTTFClient
-from parsers.tournaments_parser import TournamentsParser
-from utils.models import DateRange
 from services.player_service import PlayerService
 
 
