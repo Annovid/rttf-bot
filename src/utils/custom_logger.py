@@ -1,37 +1,74 @@
 import logging
 import os
 from datetime import datetime
+import requests
+
+from logging_loki import LokiHandler
+
+from utils.settings import settings
 
 
 class CustomLogger:
     @staticmethod
     def setup_logger() -> logging.Logger:
-        log_dir = 'logs'
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-
-        log_filename = datetime.now().strftime('%Y-%m-%d %H-%M-%S.log')
-        log_filepath = os.path.join(log_dir, log_filename)
-
         logger = logging.getLogger('custom_logger')
         logger.setLevel(logging.DEBUG)
-        file_handler = logging.FileHandler(log_filepath, encoding='utf-8')
-        file_handler.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)-8s - %(message)s'
         )
-        file_handler.setFormatter(formatter)
 
+        CustomLogger._add_file_handler(logger, formatter)
+        CustomLogger._add_console_handler(logger, formatter)
+        if getattr(settings, "USE_LOKI", False):
+            CustomLogger._add_loki_handler(logger, formatter)
+
+        logger.info('Logger setup complete')
+        return logger
+
+    @staticmethod
+    def _add_file_handler(logger: logging.Logger, formatter: logging.Formatter):
+        log_dir = 'logs'
+        os.makedirs(log_dir, exist_ok=True)
+        log_filename = datetime.now().strftime('%Y-%m-%d %H-%M-%S.log')
+        log_filepath = os.path.join(log_dir, log_filename)
+
+        file_handler = logging.FileHandler(log_filepath, encoding='utf-8')
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
+    @staticmethod
+    def _add_console_handler(logger: logging.Logger, formatter: logging.Formatter):
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-        logger.info('Logger setup')
-        return logger
+    @staticmethod
+    def _add_loki_handler(logger: logging.Logger, formatter: logging.Formatter):
+        try:
+            loki_url = settings.LOKI_URL
+            environment = settings.ENVIRONMENT
+
+            check = requests.get(f"http://{loki_url}/ready", timeout=5)
+            if check.status_code != 200:
+                raise ConnectionError(f"Loki server not available (status {check.status_code})")
+
+            loki_handler = LokiHandler(
+                url=f"http://{loki_url}/loki/api/v1/push",
+                tags={
+                    "application": "rttf-bot",
+                    "environment": environment,
+                    "hostname": os.uname().nodename,
+                },
+                version="1",
+            )
+            loki_handler.setLevel(logging.DEBUG)
+            loki_handler.setFormatter(formatter)
+            logger.addHandler(loki_handler)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to Loki server: {e}")
 
 
 logger: logging.Logger = CustomLogger.setup_logger()
